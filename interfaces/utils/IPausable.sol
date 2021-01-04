@@ -2,7 +2,7 @@
 pragma solidity >=0.6.8;
 
 interface IPausable {
-  event Pause(bool _paused);
+  event Paused(bool _paused);
 
   function pause(bool _paused) external;
 }

@@ -3,10 +3,6 @@
 
 pragma solidity >=0.6.8;
 
-import '@openzeppelin/contracts/utils/Address.sol';
-import '@openzeppelin/contracts/utils/EnumerableSet.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import '../../interfaces/utils/IPausable.sol';
 
 abstract
@@ -23,6 +19,7 @@ contract Pausable is IPausable {
   function _pause(bool _paused) internal {
     require(paused != _paused, 'no-change');
     paused = _paused;
+    emit Paused(_paused);
   }
 
 }

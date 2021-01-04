@@ -5,14 +5,15 @@ pragma solidity >=0.6.8;
 import './Governable.sol';
 import './CollectableDust.sol';
 import './Pausable.sol';
+import './Migratable.sol';
 
 abstract
-contract UtilsReady is Governable, CollectableDust, Pausable {
+contract UtilsReady is Governable, CollectableDust, Pausable, Migratable {
 
-  constructor() public Governable(msg.sender) CollectableDust() Pausable() {
+  constructor() public Governable(msg.sender) {
   }
 
-  // Governable
+  // Governable: restricted-access
   function setPendingGovernor(address _pendingGovernor) external override onlyGovernor {
     _setPendingGovernor(_pendingGovernor);
   }
@@ -21,7 +22,7 @@ contract UtilsReady is Governable, CollectableDust, Pausable {
     _acceptGovernor();
   }
 
-  // Collectable Dust
+  // Collectable Dust: restricted-access
   function sendDust(
     address _to,
     address _token,
@@ -30,9 +31,14 @@ contract UtilsReady is Governable, CollectableDust, Pausable {
     _sendDust(_to, _token, _amount);
   }
 
-  // Pausable
+  // Pausable: restricted-access
   function pause(bool _paused) external override onlyGovernor {
     _pause(_paused);
+  }
+
+  // Migratable: restricted-access
+  function migrate(address _to) external onlyGovernor {
+      _migrated(_to);
   }
 
 }

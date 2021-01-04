@@ -2,47 +2,46 @@
 
 pragma solidity >=0.6.8;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@lbertenasco/bonded-stealth-tx/interfaces/stealth/IStealthVault.sol';
 
 import '../../interfaces/utils/IStealthTx.sol';
+import '../../interfaces/utils/IMigratable.sol';
 
 /*
  * StealthTxAbstract
  */
 abstract
 contract StealthTx is IStealthTx {
-    using SafeMath for uint256;
-    using SafeERC20 for IERC20;
 
-    mapping(bytes32 => address) public hashDiscoveredBy;
-    uint256 public penalty = 1000 ether; // 1k DAI
-    address public dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public stealthVault;
+    uint256 public penalty = 1 ether;
 
-    constructor() public {
+    constructor(address _stealthVault) public {
+        _setStealthVault(_stealthVault);
     }
 
-    modifier stealthTx(bytes32 _hash) {
-        require(IERC20(dai).balanceOf(msg.sender) >= penalty, 'StealthTx: balance < penalty');
-        require(IERC20(dai).allowance(msg.sender, address(this)) >= penalty, 'StealthTx: allowance < penalty');
-        address discoveredBy = hashDiscoveredBy[_hash];
-        if (discoveredBy != address(0)) {
-            // User reported this TX as public, taking penalty away
-            delete hashDiscoveredBy[_hash];
-            IERC20(dai).safeTransferFrom(msg.sender, discoveredBy, penalty);
-            return;
-        }
+    modifier validateStealthTx(bytes32 _stealthHash) {
+        bool valid = IStealthVault(stealthVault).validateHash(msg.sender, _stealthHash, penalty);
+        if (!valid) return;
         _;
     }
 
-    function reportHash(bytes32 _hash) external override {
-        require(hashDiscoveredBy[_hash] == address(0), 'hash-already-discovered');
-        hashDiscoveredBy[_hash] = msg.sender;
+    function _setStealthVault(address _stealthVault) internal {
+        require(IStealthVault(stealthVault).isStealthVault(), 'not stealth vault');
+        stealthVault = _stealthVault;
     }
+
     function _setPenalty(uint256 _penalty) internal {
         require(_penalty > 0, 'penalty-not-0');
         penalty = _penalty;
+    }
+
+    function _migrateStealthVault() internal {
+        address _migratedTo = IMigratable(stealthVault).migratedTo();
+        require(_migratedTo != address(0), 'not-migrated');
+        _setStealthVault(_migratedTo);
+        emit MigratedStealthVault(_migratedTo);
     }
 
 }

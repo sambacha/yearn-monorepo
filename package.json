@@ -1,7 +1,7 @@
 {
   "name": "@lbertenasco/contract-utils",
   "description": "utility smart contracts",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "files": [
     "/contracts/**/*.sol",
     "/interfaces/**/*.sol",
@@ -25,6 +25,7 @@
     "utils"
   ],
   "devDependencies": {
+    "@lbertenasco/bonded-stealth-tx": "0.1.1",
     "@nomiclabs/hardhat-ethers": "2.0.1",
     "@nomiclabs/hardhat-etherscan": "2.1.0",
     "@nomiclabs/hardhat-waffle": "2.0.1",
