@@ -23,18 +23,21 @@ contract StealthTx is IStealthTx {
 
     modifier validateStealthTx(bytes32 _stealthHash) {
         bool valid = IStealthVault(stealthVault).validateHash(msg.sender, _stealthHash, penalty);
+        // if not valid, do not revert execution. just return.
         if (!valid) return;
         _;
     }
 
     function _setStealthVault(address _stealthVault) internal {
-        require(IStealthVault(stealthVault).isStealthVault(), 'not stealth vault');
+        require(IStealthVault(_stealthVault).isStealthVault(), 'not stealth vault');
         stealthVault = _stealthVault;
+        emit StealthVaultSet(_stealthVault);
     }
 
     function _setPenalty(uint256 _penalty) internal {
         require(_penalty > 0, 'penalty-not-0');
         penalty = _penalty;
+        emit PenaltySet(_penalty);
     }
 
     function _migrateStealthVault() internal {

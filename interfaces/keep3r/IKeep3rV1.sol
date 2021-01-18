@@ -12,4 +12,9 @@ interface IKeep3rV1 {
     function workReceipt(address _keeper, uint256 _amount) external;
     function receipt(address credit, address _keeper, uint256 _amount) external;
     function receiptETH(address _keeper, uint256 _amount) external;
+
+    function addLiquidityToJob(address liquidity, address job, uint amount) external;
+    function applyCreditToJob(address provider, address liquidity, address job) external;
+    function unbondLiquidityFromJob(address liquidity, address job, uint amount) external;
+    function removeLiquidityFromJob(address liquidity, address job) external;
 }
