@@ -17,4 +17,13 @@ interface IKeep3rV1 {
     function applyCreditToJob(address provider, address liquidity, address job) external;
     function unbondLiquidityFromJob(address liquidity, address job, uint amount) external;
     function removeLiquidityFromJob(address liquidity, address job) external;
+
+    function credits(address _job, address _credit) external view returns (uint256 _amount);
+
+    function liquidityProvided(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
+    function liquidityApplied(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
+    function liquidityAmount(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
+    
+    function liquidityUnbonding(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
+    function liquidityAmountsUnbonding(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
 }
