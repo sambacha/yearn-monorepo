@@ -59,7 +59,7 @@ contract Keep3r is IKeep3r {
   // Checks if caller is a valid keeper, handles payment amount in ETH after execution
   modifier paysKeeperEth(uint256 _amount) {
     _;
-    keep3r.receiptETH( msg.sender, _amount);
+    keep3r.receiptETH(msg.sender, _amount);
   }
 
   // Internal helpers

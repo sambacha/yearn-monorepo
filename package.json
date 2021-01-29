@@ -1,7 +1,7 @@
 {
   "name": "@lbertenasco/contract-utils",
   "description": "utility smart contracts",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "files": [
     "/contracts/**/*.sol",
     "/interfaces/**/*.sol",
