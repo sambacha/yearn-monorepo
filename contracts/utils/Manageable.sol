@@ -6,8 +6,8 @@ import '../../interfaces/utils/IManageable.sol';
 
 abstract
 contract Manageable is IManageable {
-  address public manager;
-  address public pendingManager;
+  address public override manager;
+  address public override pendingManager;
 
   constructor(address _manager) public {
     require(_manager != address(0), 'manageable/manager-should-not-be-zero-address');
@@ -26,8 +26,12 @@ contract Manageable is IManageable {
     emit ManagerAccepted();
   }
 
+  function isManager(address _account) public view override returns (bool _isManager) {
+    return _account == manager;
+  }
+
   modifier onlyManager {
-    require(msg.sender == manager, 'manageable/only-manager');
+    require(isManager(msg.sender), 'manageable/only-manager');
     _;
   }
 

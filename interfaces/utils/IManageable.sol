@@ -7,4 +7,9 @@ interface IManageable {
 
   function setPendingManager(address _pendingManager) external;
   function acceptManager() external;
+
+  function manager() external view returns (address _manager);
+  function pendingManager() external view returns (address _pendingManager);
+
+  function isManager(address _account) external view returns (bool _isManager);
 }

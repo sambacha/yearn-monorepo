@@ -6,8 +6,8 @@ import '../../interfaces/utils/IGovernable.sol';
 
 abstract
 contract Governable is IGovernable {
-  address public governor;
-  address public pendingGovernor;
+  address public override governor;
+  address public override pendingGovernor;
 
   constructor(address _governor) public {
     require(_governor != address(0), 'governable/governor-should-not-be-zero-address');
@@ -26,8 +26,12 @@ contract Governable is IGovernable {
     emit GovernorAccepted();
   }
 
+  function isGovernor(address _account) public view override returns (bool _isGovernor) {
+    return _account == governor;
+  }
+
   modifier onlyGovernor {
-    require(msg.sender == governor, 'governable/only-governor');
+    require(isGovernor(msg.sender), 'governable/only-governor');
     _;
   }
 
