@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.8;
+pragma solidity 0.6.12;
 interface IKeep3rV1 {
     function name() external returns (string memory);
     function isKeeper(address _keeper) external returns (bool);

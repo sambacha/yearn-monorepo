@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.8;
+pragma solidity 0.6.12;
 
-import './Governable.sol';
-import './CollectableDust.sol';
-import './Pausable.sol';
-import './Migratable.sol';
+import '../utils/Governable.sol';
+import '../utils/CollectableDust.sol';
+import '../utils/Pausable.sol';
 
 abstract
-contract UtilsReady is Governable, CollectableDust, Pausable, Migratable {
+contract UtilsReady is Governable, CollectableDust, Pausable {
 
   constructor() public Governable(msg.sender) {
   }
@@ -34,11 +33,6 @@ contract UtilsReady is Governable, CollectableDust, Pausable, Migratable {
   // Pausable: restricted-access
   function pause(bool _paused) external override onlyGovernor {
     _pause(_paused);
-  }
-
-  // Migratable: restricted-access
-  function migrate(address _to) external onlyGovernor {
-      _migrated(_to);
   }
 
 }
