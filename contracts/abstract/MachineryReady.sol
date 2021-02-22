@@ -8,15 +8,12 @@ import '../utils/Machinery.sol';
 abstract
 contract MachineryReady is UtilsReady, Machinery {
 
-  constructor() public Machinery(msg.sender) UtilsReady() {
+  constructor(address _mechanicsRegistry) public Machinery(_mechanicsRegistry) UtilsReady() {
   }
 
   // Machinery: restricted-access
-  function addMechanic(address _mechanic) external override onlyGovernor {
-    _addMechanic(_mechanic);
-  }
-  function removeMechanic(address _mechanic) external override onlyGovernor {
-    _removeMechanic(_mechanic);
+  function setMechanicsRegistry(address _mechanicsRegistry) external override onlyGovernor {
+    _setMechanicsRegistry(_mechanicsRegistry);
   }
 
   // Machinery: modifiers

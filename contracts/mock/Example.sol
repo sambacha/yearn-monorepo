@@ -2,23 +2,23 @@
 pragma solidity 0.6.12;
 
 // import from @lbertenasco/contract-utils/contracts
-import "../utils/UtilsReady.sol";
+import "../abstract/MigratableReady.sol";
 import "../utils/Manageable.sol";
 import "../utils/StealthTx.sol";
 
 /**
- * UtilsReady (Manageable, CollectableDust, Pausable, Migratable)
+ * MigratableReady = UtilsReady (Manageable, CollectableDust, Pausable) + Migratable
  * Manageable
  * StealthTx
  * 
  */
 
-contract Example is UtilsReady, Manageable, StealthTx {
+contract Example is MigratableReady, Manageable, StealthTx {
     event StealthEvent(bytes32 _stealth);
 
     constructor(
         address _stealthVault
-    ) public UtilsReady() Manageable(msg.sender) StealthTx(_stealthVault) {
+    ) public MigratableReady() Manageable(msg.sender) StealthTx(_stealthVault) {
     }
 
     // StealthTx: unrestricted-access
