@@ -12,7 +12,6 @@ contract MechanicsRegistry is UtilsReady, IMechanicsRegistry {
     EnumerableSet.AddressSet internal _mechanics;
 
     constructor(address _mechanic) public {
-        require(_mechanic != address(0), 'machinery/mechanic-should-not-be-zero-address');
         _addMechanic(_mechanic);
     }
 
@@ -26,13 +25,14 @@ contract MechanicsRegistry is UtilsReady, IMechanicsRegistry {
     }
 
     function _addMechanic(address _mechanic) internal {
-        require(!_mechanics.contains(_mechanic), "Keep3rJob::add-mechanic:mechanic-already-added");
+        require(_mechanic != address(0), 'MechanicsRegistry::add-mechanic:mechanic-should-not-be-zero-address');
+        require(!_mechanics.contains(_mechanic), "MechanicsRegistry::add-mechanic:mechanic-already-added");
         _mechanics.add(_mechanic);
         emit MechanicAdded(_mechanic);
     }
 
     function _removeMechanic(address _mechanic) internal {
-        require(_mechanics.contains(_mechanic), "Keep3rJob::remove-mechanic:mechanic-not-found");
+        require(_mechanics.contains(_mechanic), "MechanicsRegistry::remove-mechanic:mechanic-not-found");
         _mechanics.remove(_mechanic);
         emit MechanicRemoved(_mechanic);
     }
