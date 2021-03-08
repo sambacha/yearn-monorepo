@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
+import "./IKeep3rV1Helper.sol";
+
 interface IKeep3rV1 {
     function name() external returns (string memory);
+    function KPRH() external view returns (IKeep3rV1Helper);
+
     function isKeeper(address _keeper) external returns (bool);
     function isMinKeeper(address _keeper, uint256 _minBond, uint256 _earned, uint256 _age) external returns (bool);
     function isBondedKeeper(address _keeper, address bond, uint256 _minBond, uint256 _earned, uint256 _age) external returns (bool);

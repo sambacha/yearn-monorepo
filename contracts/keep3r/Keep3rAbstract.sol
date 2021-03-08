@@ -2,11 +2,14 @@
 
 pragma solidity 0.6.12;
 
+import '@openzeppelin/contracts/math/SafeMath.sol';
+
 import '../../interfaces/keep3r/IKeep3rV1.sol';
 import '../../interfaces/keep3r/IKeep3r.sol';
 
 abstract
 contract Keep3r is IKeep3r {
+  using SafeMath for uint256;
 
   IKeep3rV1 internal _Keep3r;
   address public bond;
@@ -50,6 +53,15 @@ contract Keep3r is IKeep3r {
   modifier paysKeeper() {
     _;
     _Keep3r.worked(msg.sender);
+  }
+  modifier paysKeeperInTokens() {
+      uint256 _gasUsed = gasleft();
+      _;
+      _Keep3r.receipt(
+        address(_Keep3r),
+        msg.sender,
+        _Keep3r.KPRH().getQuoteLimit(_gasUsed.sub(gasleft()))
+      );
   }
   // Checks if caller is a valid keeper, handles payment amount after execution
   modifier paysKeeperAmount(uint256 _amount) {
