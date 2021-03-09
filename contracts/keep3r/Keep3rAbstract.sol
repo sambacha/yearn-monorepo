@@ -49,34 +49,10 @@ contract Keep3r is IKeep3r {
     return address(_Keep3r);
   }
 
-  // Checks if caller is a valid keeper, handles default payment after execution
+  // handles default payment after execution
   modifier paysKeeper() {
     _;
-    _Keep3r.worked(msg.sender);
-  }
-  modifier paysKeeperInTokens() {
-      uint256 _gasUsed = gasleft();
-      _;
-      _Keep3r.receipt(
-        address(_Keep3r),
-        msg.sender,
-        _Keep3r.KPRH().getQuoteLimit(_gasUsed.sub(gasleft()))
-      );
-  }
-  // Checks if caller is a valid keeper, handles payment amount after execution
-  modifier paysKeeperAmount(uint256 _amount) {
-    _;
-    _Keep3r.workReceipt(msg.sender, _amount);
-  }
-  // Checks if caller is a valid keeper, handles payment amount in _credit after execution
-  modifier paysKeeperCredit(address _credit, uint256 _amount) {
-    _;
-    _Keep3r.receipt(_credit, msg.sender, _amount);
-  }
-  // Checks if caller is a valid keeper, handles payment amount in ETH after execution
-  modifier paysKeeperEth(uint256 _amount) {
-    _;
-    _Keep3r.receiptETH(msg.sender, _amount);
+    _paysKeeper(msg.sender);
   }
 
   // Internal helpers
@@ -94,5 +70,30 @@ contract Keep3r is IKeep3r {
         require(_Keep3r.isBondedKeeper(msg.sender, bond, minBond, earned, age), "keep3r::isKeeper:keeper-not-custom-min-requirements");
       }
     }
+  }
+
+  function _getQuoteLimit(uint256 _gasUsed) internal view returns (uint256 _credits) {
+    return _Keep3r.KPRH().getQuoteLimit(_gasUsed.sub(gasleft()));
+  }
+
+  // pays in bonded KP3R after execution
+  function _paysKeeper(address _keeper) internal {
+    _Keep3r.worked(_keeper);
+  }
+  // pays _amount in KP3R after execution
+  function _paysKeeperInTokens(address _keeper, uint256 _amount) internal {
+    _Keep3r.receipt(address(_Keep3r), _keeper, _amount);
+  }
+  // pays _amount in bonded KP3R after execution
+  function _paysKeeperAmount(address _keeper, uint256 _amount) internal {
+    _Keep3r.workReceipt(_keeper, _amount);
+  }
+  // pays _amount in _credit after execution
+  function _paysKeeperCredit(address _credit, address _keeper, uint256 _amount) internal {
+    _Keep3r.receipt(_credit, _keeper, _amount);
+  }
+  // pays _amount in ETH after execution
+  function _paysKeeperEth(address _keeper, uint256 _amount) internal {
+    _Keep3r.receiptETH(_keeper, _amount);
   }
 }
