@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IKeep3rV1Helper.sol";
 
-interface IKeep3rV1 {
+interface IKeep3rV1 is IERC20 {
     function name() external returns (string memory);
     function KPRH() external view returns (IKeep3rV1Helper);
 
