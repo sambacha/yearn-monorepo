@@ -25,6 +25,8 @@ interface IKeep3rV1 is IERC20 {
 
     function credits(address _job, address _credit) external view returns (uint256 _amount);
 
+    function liquidityAccepted(address _liquidity) external view returns (bool);
+
     function liquidityProvided(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
     function liquidityApplied(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
     function liquidityAmount(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
