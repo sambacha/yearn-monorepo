@@ -33,4 +33,9 @@ interface IKeep3rV1 is IERC20 {
     
     function liquidityUnbonding(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
     function liquidityAmountsUnbonding(address _provider, address _liquidity, address _job) external view returns (uint256 _amount);
+
+    function bond(address bonding, uint256 amount) external;
+    function activate(address bonding) external;
+    function unbond(address bonding, uint256 amount) external;
+    function withdraw(address bonding) external;
 }
