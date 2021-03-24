@@ -12,11 +12,11 @@ contract Keep3r is IKeep3r {
   using SafeMath for uint256;
 
   IKeep3rV1 internal _Keep3r;
-  address public bond;
-  uint256 public minBond;
-  uint256 public earned;
-  uint256 public age;
-  bool public onlyEOA;
+  address public override bond;
+  uint256 public override minBond;
+  uint256 public override earned;
+  uint256 public override age;
+  bool public override onlyEOA;
 
   constructor(address _keep3r) public {
     _setKeep3r(_keep3r);
