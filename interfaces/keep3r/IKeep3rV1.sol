@@ -15,6 +15,7 @@ interface IKeep3rV1 is IERC20 {
     function removeJob(address _job) external;
     function addVotes(address voter, uint256 amount) external;
     function removeVotes(address voter, uint256 amount) external;
+    function revoke(address keeper) external;
 
     function worked(address _keeper) external;
     function workReceipt(address _keeper, uint256 _amount) external;
