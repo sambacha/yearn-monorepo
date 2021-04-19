@@ -72,8 +72,8 @@ contract Keep3r is IKeep3r {
     }
   }
 
-  function _getQuoteLimit(uint256 _gasUsed) internal view returns (uint256 _credits) {
-    return _Keep3r.KPRH().getQuoteLimit(_gasUsed.sub(gasleft()));
+  function _getQuoteLimitFor(address _for, uint256 _initialGas) internal view returns (uint256 _credits) {
+    return _Keep3r.KPRH().getQuoteLimitFor(_for, _initialGas.sub(gasleft()));
   }
 
   // pays in bonded KP3R after execution
