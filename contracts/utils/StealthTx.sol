@@ -22,10 +22,24 @@ contract StealthTx is IStealthTx {
     }
 
     modifier validateStealthTx(bytes32 _stealthHash) {
-        bool valid = IStealthVault(stealthVault).validateHash(msg.sender, _stealthHash, penalty);
         // if not valid, do not revert execution. just return.
-        if (!valid) return;
+        if (!_validateStealthTx(_stealthHash)) return;
         _;
+    }
+
+    modifier validateStealthTxAndBlock(bytes32 _stealthHash, uint256 _blockNumber) {
+        // if not valid, do not revert execution. just return.
+        if (!_validateStealthTxAndBlock(_stealthHash, _blockNumber)) return;
+        _;
+    }
+
+    function _validateStealthTx(bytes32 _stealthHash) internal returns (bool) {
+        return IStealthVault(stealthVault).validateHash(msg.sender, _stealthHash, penalty);
+    }
+
+    function _validateStealthTxAndBlock(bytes32 _stealthHash, uint256 _blockNumber) internal returns (bool) {
+        if (block.number != _blockNumber) return false;
+        return _validateStealthTx(_stealthHash);
     }
 
     function _setStealthVault(address _stealthVault) internal {
