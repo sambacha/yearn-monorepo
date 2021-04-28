@@ -1,12 +1,11 @@
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
-import '@openzeppelin/contracts/utils/Address.sol';
-import '@openzeppelin/contracts/utils/EnumerableSet.sol';
+import '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import '../../interfaces/utils/ICollectableDust.sol';
 
@@ -18,7 +17,7 @@ contract CollectableDust is ICollectableDust {
   address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   EnumerableSet.AddressSet internal protocolTokens;
 
-  constructor() public {}
+  constructor() {}
 
   function _addProtocolToken(address _token) internal {
     require(!protocolTokens.contains(_token), 'collectable-dust/token-is-part-of-the-protocol');

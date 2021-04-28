@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
-
-import '@openzeppelin/contracts/math/SafeMath.sol';
+pragma solidity 0.8.4;
 
 import '../../interfaces/keep3r/IKeep3rV1.sol';
 import '../../interfaces/keep3r/IKeep3r.sol';
 
 abstract
 contract Keep3r is IKeep3r {
-  using SafeMath for uint256;
 
   IKeep3rV1 internal _Keep3r;
   address public override bond;
@@ -18,7 +15,7 @@ contract Keep3r is IKeep3r {
   uint256 public override age;
   bool public override onlyEOA;
 
-  constructor(address _keep3r) public {
+  constructor(address _keep3r) {
     _setKeep3r(_keep3r);
   }
 
@@ -73,7 +70,7 @@ contract Keep3r is IKeep3r {
   }
 
   function _getQuoteLimitFor(address _for, uint256 _initialGas) internal view returns (uint256 _credits) {
-    return _Keep3r.KPRH().getQuoteLimitFor(_for, _initialGas.sub(gasleft()));
+    return _Keep3r.KPRH().getQuoteLimitFor(_for, _initialGas - gasleft());
   }
 
   // pays in bonded KP3R after execution

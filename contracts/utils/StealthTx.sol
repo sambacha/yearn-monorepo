@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
-import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@lbertenasco/bonded-stealth-tx/interfaces/stealth/IStealthVault.sol';
 
 import '../../interfaces/utils/IStealthTx.sol';
@@ -17,7 +16,7 @@ contract StealthTx is IStealthTx {
     address public stealthVault;
     uint256 public penalty = 1 ether;
 
-    constructor(address _stealthVault) public {
+    constructor(address _stealthVault) {
         _setStealthVault(_stealthVault);
     }
 

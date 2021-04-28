@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import '../../interfaces/utils/IGovernable.sol';
 
@@ -9,7 +9,7 @@ contract Governable is IGovernable {
   address public override governor;
   address public override pendingGovernor;
 
-  constructor(address _governor) public {
+  constructor(address _governor) {
     require(_governor != address(0), 'governable/governor-should-not-be-zero-address');
     governor = _governor;
   }

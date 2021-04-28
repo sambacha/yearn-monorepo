@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import '../../interfaces/mechanics/IMechanicsRegistry.sol';
 import '../abstract/UtilsReady.sol';
 
@@ -11,7 +11,7 @@ contract MechanicsRegistry is UtilsReady, IMechanicsRegistry {
 
     EnumerableSet.AddressSet internal _mechanics;
 
-    constructor(address _mechanic) public {
+    constructor(address _mechanic) {
         _addMechanic(_mechanic);
     }
 

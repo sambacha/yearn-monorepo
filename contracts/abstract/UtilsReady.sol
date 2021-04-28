@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import '../utils/Governable.sol';
 import '../utils/CollectableDust.sol';
@@ -9,8 +9,7 @@ import '../utils/Pausable.sol';
 abstract
 contract UtilsReady is Governable, CollectableDust, Pausable {
 
-  constructor() public Governable(msg.sender) {
-  }
+  constructor() Governable(msg.sender) { }
 
   // Governable: restricted-access
   function setPendingGovernor(address _pendingGovernor) external override onlyGovernor {

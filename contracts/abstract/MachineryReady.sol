@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import './UtilsReady.sol';
 import '../utils/Machinery.sol';
@@ -8,7 +8,7 @@ import '../utils/Machinery.sol';
 abstract
 contract MachineryReady is UtilsReady, Machinery {
 
-  constructor(address _mechanicsRegistry) public Machinery(_mechanicsRegistry) UtilsReady() {
+  constructor(address _mechanicsRegistry) Machinery(_mechanicsRegistry) UtilsReady() {
   }
 
   // Machinery: restricted-access

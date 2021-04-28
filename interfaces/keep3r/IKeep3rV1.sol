@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IKeep3rV1Helper.sol";
 
@@ -9,7 +9,7 @@ interface IKeep3rV1 is IERC20 {
 
     function isKeeper(address _keeper) external returns (bool);
     function isMinKeeper(address _keeper, uint256 _minBond, uint256 _earned, uint256 _age) external returns (bool);
-    function isBondedKeeper(address _keeper, address bond, uint256 _minBond, uint256 _earned, uint256 _age) external returns (bool);
+    function isBondedKeeper(address _keeper, address _bond, uint256 _minBond, uint256 _earned, uint256 _age) external returns (bool);
     function addKPRCredit(address _job, uint256 _amount) external;
     function addJob(address _job) external;
     function removeJob(address _job) external;

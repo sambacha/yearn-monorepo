@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 // import from @lbertenasco/contract-utils/contracts
 import "../abstract/MigratableReady.sol";
@@ -18,13 +18,14 @@ contract Example is MigratableReady, Manageable, StealthTx {
 
     constructor(
         address _stealthVault
-    ) public MigratableReady() Manageable(msg.sender) StealthTx(_stealthVault) {
+    ) MigratableReady() Manageable(msg.sender) StealthTx(_stealthVault) {
     }
 
     // StealthTx: unrestricted-access
-    function stealthFunction(bytes32 _hash) public notMigrated validateStealthTx(_hash) returns (bool) {
-        emit StealthEvent(_hash); // https://bit.ly/393bAUH
-    }
+    // function stealthFunction(bytes32 _hash) public notMigrated validateStealthTx(_hash) returns (bool) {
+    //     emit StealthEvent(_hash); // https://bit.ly/393bAUH
+    //     return false;
+    // }
 
 
     // All this below can be moved to a new ExtendedUtilsReady contract

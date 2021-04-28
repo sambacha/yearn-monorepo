@@ -1,7 +1,7 @@
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import '../../interfaces/utils/IMigratable.sol';
 
@@ -9,7 +9,7 @@ abstract
 contract Migratable is IMigratable {
   address public override migratedTo;
 
-  constructor() public {}
+  constructor() {}
   
   modifier notMigrated() {
     require(migratedTo == address(0), 'migrated');

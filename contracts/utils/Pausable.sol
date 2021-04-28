@@ -1,7 +1,7 @@
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import '../../interfaces/utils/IPausable.sol';
 
@@ -9,7 +9,7 @@ abstract
 contract Pausable is IPausable {
   bool public paused;
 
-  constructor() public {}
+  constructor() {}
   
   modifier notPaused() {
     require(!paused, 'paused');

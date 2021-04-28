@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.4;
 
 import '../../interfaces/utils/IManageable.sol';
 
@@ -9,7 +9,7 @@ contract Manageable is IManageable {
   address public override manager;
   address public override pendingManager;
 
-  constructor(address _manager) public {
+  constructor(address _manager) {
     require(_manager != address(0), 'manageable/manager-should-not-be-zero-address');
     manager = _manager;
   }
