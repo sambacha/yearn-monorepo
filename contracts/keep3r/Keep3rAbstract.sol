@@ -36,8 +36,8 @@ contract Keep3r is IKeep3r {
 
   // Modifiers
   // Only checks if caller is a valid keeper, payment should be handled manually
-  modifier onlyKeeper() {
-    _isKeeper();
+  modifier onlyKeeper(address _keeper) {
+    _isKeeper(_keeper);
     _;
   }
 
@@ -47,24 +47,24 @@ contract Keep3r is IKeep3r {
   }
 
   // handles default payment after execution
-  modifier paysKeeper() {
+  modifier paysKeeper(address _keeper) {
     _;
-    _paysKeeper(msg.sender);
+    _paysKeeper(_keeper);
   }
 
   // Internal helpers
-  function _isKeeper() internal {
-    if (onlyEOA) require(msg.sender == tx.origin, "keep3r::isKeeper:keeper-is-not-eoa");
+  function _isKeeper(address _keeper) internal {
+    if (onlyEOA) require(_keeper == tx.origin, "keep3r::isKeeper:keeper-is-not-eoa");
     if (minBond == 0 && earned == 0 && age == 0) {
       // If no custom keeper requirements are set, just evaluate if sender is a registered keeper
-      require(_Keep3r.isKeeper(msg.sender), "keep3r::isKeeper:keeper-is-not-registered");
+      require(_Keep3r.isKeeper(_keeper), "keep3r::isKeeper:keeper-is-not-registered");
     } else {
       if (bond == address(0)) {
         // Checks for min KP3R, earned and age.
-        require(_Keep3r.isMinKeeper(msg.sender, minBond, earned, age), "keep3r::isKeeper:keeper-not-min-requirements");
+        require(_Keep3r.isMinKeeper(_keeper, minBond, earned, age), "keep3r::isKeeper:keeper-not-min-requirements");
       } else {
         // Checks for min custom-bond, earned and age.
-        require(_Keep3r.isBondedKeeper(msg.sender, bond, minBond, earned, age), "keep3r::isKeeper:keeper-not-custom-min-requirements");
+        require(_Keep3r.isBondedKeeper(_keeper, bond, minBond, earned, age), "keep3r::isKeeper:keeper-not-custom-min-requirements");
       }
     }
   }
