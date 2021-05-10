@@ -1,7 +1,7 @@
 {
   "name": "@lbertenasco/contract-utils",
   "description": "utility smart contracts",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "files": [
     "/contracts/**/*.sol",
     "/interfaces/**/*.sol",
@@ -25,8 +25,8 @@
     "utils"
   ],
   "dependencies": {
-    "@lbertenasco/bonded-stealth-tx": "0.1.1",
-    "@openzeppelin/contracts": "4.0.0"
+    "@lbertenasco/bonded-stealth-tx": "0.2.1",
+    "@openzeppelin/contracts": "4.1.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "2.0.2",

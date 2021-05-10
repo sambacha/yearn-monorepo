@@ -17,7 +17,6 @@ contract OnlyStealthRelayer is IOnlyStealthRelayer {
     }
 
     modifier onlyStealthRelayer() {
-        // if not valid, do not revert execution. just return.
         require(msg.sender == stealthRelayer, 'OnlyStealthRelayer::msg-sender-not-stealth-relayer');
         _;
     }
