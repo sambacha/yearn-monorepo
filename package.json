@@ -1,7 +1,7 @@
 {
   "name": "@lbertenasco/contract-utils",
   "description": "utility smart contracts",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "files": [
     "/contracts/**/*.sol",
     "/interfaces/**/*.sol",
@@ -25,17 +25,17 @@
     "utils"
   ],
   "dependencies": {
-    "@lbertenasco/bonded-stealth-tx": "0.2.1",
-    "@openzeppelin/contracts": "4.1.0"
+    "@lbertenasco/bonded-stealth-tx": "0.3.1",
+    "@openzeppelin/contracts": "4.2.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "2.0.2",
-    "@nomiclabs/hardhat-etherscan": "2.1.2",
+    "@nomiclabs/hardhat-etherscan": "2.1.4",
     "@nomiclabs/hardhat-waffle": "2.0.1",
     "chai": "4.3.4",
-    "ethereum-waffle": "3.3.0",
-    "ethers": "5.1.4",
-    "hardhat": "2.2.1",
+    "ethereum-waffle": "3.4.0",
+    "ethers": "5.4.1",
+    "hardhat": "2.4.3",
     "hardhat-gas-reporter": "1.0.4",
     "prompt-confirm": "2.0.4"
   },
