@@ -16,6 +16,11 @@ contract Machinery is IMachinery {
     _setMechanicsRegistry(_mechanicsRegistry);
   }
 
+  modifier onlyMechanic {
+    require(MechanicsRegistry.isMechanic(msg.sender), 'Machinery: not mechanic');
+    _;
+  }
+
   function _setMechanicsRegistry(address _mechanicsRegistry) internal {
     MechanicsRegistry = IMechanicsRegistry(_mechanicsRegistry);
   }
