@@ -4,7 +4,6 @@ pragma solidity 0.8.4;
 
 import '../../interfaces/utils/IGovernable.sol';
 
-abstract
 contract Governable is IGovernable {
   address public override governor;
   address public override pendingGovernor;
@@ -12,6 +11,14 @@ contract Governable is IGovernable {
   constructor(address _governor) {
     require(_governor != address(0), 'governable/governor-should-not-be-zero-address');
     governor = _governor;
+  }
+
+  function setPendingGovernor(address _pendingGovernor) external virtual override onlyGovernor {
+    _setPendingGovernor(_pendingGovernor);
+  }
+
+  function acceptGovernor() external virtual override onlyPendingGovernor {
+    _acceptGovernor();
   }
 
   function _setPendingGovernor(address _pendingGovernor) internal {
