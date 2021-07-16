@@ -5,7 +5,10 @@
   "files": [
     "/contracts/**/*.sol",
     "/interfaces/**/*.sol",
-    "!/contracts/mock"
+    "/artifacts",
+    "!/contracts/mock",
+    "!/artifacts/@openzeppelin",
+    "!/artifacts/build-info"
   ],
   "repository": {
     "type": "git",
