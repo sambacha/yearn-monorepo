@@ -1,26 +1,20 @@
 import { expect } from 'chai';
-import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { JsonRpcSigner } from '@ethersproject/providers';
-import { Contract, utils, Wallet } from 'ethers';
-import { deployments, ethers, getNamedAccounts } from 'hardhat';
-import { contracts, evm, wallet } from '../../../utils';
-import { then, when } from '../../../utils/bdd';
-import moment from 'moment';
-import { setTestChainId } from '../../../../utils/deploy';
-import { getNodeUrl } from '../../../../utils/network';
-import zrx, { QuoteResponse } from '../../../../scripts/libraries/zrx';
-import { STRATEGY_ADDER, SWAPPER_ADDER, SWAPPER_SETTER } from '../../../../deploy/001_trade_factory';
+import { utils, Wallet } from 'ethers';
+import { evm, wallet } from '@test-utils';
+import { then } from '@test-utils/bdd';
+import { getNodeUrl } from '@utils/network';
+import zrx, { QuoteResponse } from '@scripts/libraries/zrx';
+import * as setup from '../setup';
+import { IERC20, TradeFactory } from '@typechained';
 
 describe('ZRX', function () {
-  let swapperAdder: JsonRpcSigner;
-  let swapperSetter: JsonRpcSigner;
-  let strategyAdder: JsonRpcSigner;
-  let crvWhale: JsonRpcSigner;
   let yMech: JsonRpcSigner;
   let strategy: Wallet;
 
-  let tradeFactory: Contract;
-  let ZRXSwapper: Contract;
+  let tradeFactory: TradeFactory;
+
+  let snapshotId: string;
 
   const MAX_SLIPPAGE = 10_000; // 1%
 
@@ -32,12 +26,12 @@ describe('ZRX', function () {
 
     const CRV_WHALE_ADDRESS = '0xd2d43555134dc575bf7279f4ba18809645db0f1d';
 
-    let CRV: Contract;
-    let DAI: Contract;
+    let CRV: IERC20;
+    let DAI: IERC20;
 
     const AMOUNT_IN = utils.parseEther('10000');
+
     let zrxAPIResponse: QuoteResponse;
-    let forkBlockNumber: number;
 
     before(async () => {
       strategy = await wallet.generateRandom();
@@ -56,42 +50,31 @@ describe('ZRX', function () {
         sippagePercentage: 0.03,
       });
 
-      forkBlockNumber = await ethers.provider.getBlockNumber();
+      ({
+        fromToken: CRV,
+        toToken: DAI,
+        yMech,
+        tradeFactory,
+      } = await setup.async({
+        chainId: CHAIN_ID,
+        fixture: ['Common', 'ZRX'],
+        swapper: {
+          name: 'ZRX',
+          type: 'async',
+        },
+        fromTokenAddress: CRV_ADDRESS,
+        toTokenAddress: DAI_ADDRESS,
+        fromTokenWhaleAddress: CRV_WHALE_ADDRESS,
+        amountIn: AMOUNT_IN,
+        maxSlippage: MAX_SLIPPAGE,
+        strategy,
+      }));
+
+      snapshotId = await evm.snapshot.take();
     });
 
     beforeEach(async () => {
-      await evm.reset({
-        jsonRpcUrl: getNodeUrl('mainnet'),
-        blockNumber: forkBlockNumber,
-      });
-
-      const namedAccounts = await getNamedAccounts();
-
-      swapperAdder = await wallet.impersonate(SWAPPER_ADDER[CHAIN_ID]);
-      swapperSetter = await wallet.impersonate(SWAPPER_SETTER[CHAIN_ID]);
-      strategyAdder = await wallet.impersonate(STRATEGY_ADDER[CHAIN_ID]);
-      crvWhale = await wallet.impersonate(CRV_WHALE_ADDRESS);
-      yMech = await wallet.impersonate(namedAccounts.yMech);
-
-      await ethers.provider.send('hardhat_setBalance', [namedAccounts.deployer, '0xffffffffffffffff']);
-      await ethers.provider.send('hardhat_setBalance', [strategy.address, '0xffffffffffffffff']);
-      setTestChainId(CHAIN_ID);
-      await deployments.fixture(['Common', 'ZRX'], { keepExistingDeployments: false });
-
-      CRV = await ethers.getContractAt(IERC20_ABI, CRV_ADDRESS);
-      DAI = await ethers.getContractAt(IERC20_ABI, DAI_ADDRESS);
-
-      tradeFactory = await ethers.getContract('TradeFactory');
-      ZRXSwapper = await ethers.getContract('ZRX');
-
-      await CRV.connect(crvWhale).transfer(strategy.address, AMOUNT_IN);
-
-      await tradeFactory.connect(strategyAdder).grantRole(await tradeFactory.STRATEGY(), strategy.address);
-      await tradeFactory.connect(swapperAdder).addSwappers([ZRXSwapper.address]);
-      await tradeFactory.connect(swapperSetter).setStrategyAsyncSwapper(strategy.address, ZRXSwapper.address);
-
-      await CRV.connect(strategy).approve(tradeFactory.address, AMOUNT_IN);
-      await tradeFactory.connect(strategy).create(CRV_ADDRESS, DAI_ADDRESS, AMOUNT_IN, MAX_SLIPPAGE, moment().add('30', 'minutes').unix());
+      await evm.snapshot.revert(snapshotId);
     });
 
     describe('swap', () => {
@@ -117,14 +100,12 @@ describe('ZRX', function () {
 
     const WMATIC_WHALE_ADDRESS = '0xadbf1854e5883eb8aa7baf50705338739e558e5b';
 
-    let WMATIC: Contract;
-    let DAI: Contract;
+    let WMATIC: IERC20;
+    let DAI: IERC20;
 
-    let wmaticWhale: JsonRpcSigner;
+    let zrxAPIResponse: QuoteResponse;
 
     const AMOUNT_IN = utils.parseEther('10000');
-    let zrxAPIResponse: QuoteResponse;
-    let forkBlockNumber: number;
 
     before(async () => {
       strategy = await wallet.generateRandom();
@@ -133,53 +114,39 @@ describe('ZRX', function () {
         jsonRpcUrl: getNodeUrl('polygon'),
       });
 
-      // We get information for trade first, 1inch API starts returning non-valid data
-
       zrxAPIResponse = await zrx.quote({
         chainId: CHAIN_ID,
         sellToken: WMATIC_ADDRESS,
         buyToken: DAI_ADDRESS,
         sellAmount: AMOUNT_IN,
-        sippagePercentage: 0.03,
+        sippagePercentage: 0.1,
       });
 
-      forkBlockNumber = await ethers.provider.getBlockNumber();
+      ({
+        fromToken: WMATIC,
+        toToken: DAI,
+        yMech,
+        tradeFactory,
+      } = await setup.async({
+        chainId: CHAIN_ID,
+        fixture: ['Common', 'ZRX'],
+        swapper: {
+          name: 'ZRX',
+          type: 'async',
+        },
+        fromTokenAddress: WMATIC_ADDRESS,
+        toTokenAddress: DAI_ADDRESS,
+        fromTokenWhaleAddress: WMATIC_WHALE_ADDRESS,
+        amountIn: AMOUNT_IN,
+        maxSlippage: MAX_SLIPPAGE,
+        strategy,
+      }));
+
+      snapshotId = await evm.snapshot.take();
     });
 
     beforeEach(async () => {
-      await evm.reset({
-        jsonRpcUrl: getNodeUrl('polygon'),
-        blockNumber: forkBlockNumber,
-      });
-
-      const namedAccounts = await getNamedAccounts();
-
-      swapperAdder = await wallet.impersonate(SWAPPER_ADDER[CHAIN_ID]);
-      swapperSetter = await wallet.impersonate(SWAPPER_SETTER[CHAIN_ID]);
-      strategyAdder = await wallet.impersonate(STRATEGY_ADDER[CHAIN_ID]);
-      wmaticWhale = await wallet.impersonate(WMATIC_WHALE_ADDRESS);
-      yMech = await wallet.impersonate(namedAccounts.yMech);
-
-      await ethers.provider.send('hardhat_setBalance', [namedAccounts.deployer, '0xffffffffffffffff']);
-      await ethers.provider.send('hardhat_setBalance', [strategy.address, '0xffffffffffffffff']);
-      setTestChainId(CHAIN_ID);
-      await deployments.fixture(['TradeFactory', 'ZRX'], { keepExistingDeployments: false });
-
-      WMATIC = await ethers.getContractAt(IERC20_ABI, WMATIC_ADDRESS);
-      DAI = await ethers.getContractAt(IERC20_ABI, DAI_ADDRESS);
-
-      tradeFactory = await ethers.getContract('TradeFactory');
-      ZRXSwapper = await ethers.getContract('ZRX');
-
-      await WMATIC.connect(wmaticWhale).transfer(strategy.address, AMOUNT_IN);
-
-      await tradeFactory.connect(strategyAdder).grantRole(await tradeFactory.STRATEGY(), strategy.address);
-      await tradeFactory.connect(swapperAdder).addSwappers([ZRXSwapper.address]);
-      await tradeFactory.connect(swapperSetter).setStrategyAsyncSwapper(strategy.address, ZRXSwapper.address);
-
-      await WMATIC.connect(strategy).approve(tradeFactory.address, AMOUNT_IN);
-
-      await tradeFactory.connect(strategy).create(WMATIC_ADDRESS, DAI_ADDRESS, AMOUNT_IN, MAX_SLIPPAGE, moment().add('30', 'minutes').unix());
+      await evm.snapshot.revert(snapshotId);
     });
 
     describe('swap', () => {

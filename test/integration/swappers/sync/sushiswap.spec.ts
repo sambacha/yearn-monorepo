@@ -1,15 +1,11 @@
 import { expect } from 'chai';
-import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
-import { JsonRpcSigner } from '@ethersproject/providers';
-import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { Contract, utils, Wallet } from 'ethers';
-import { deployments, ethers, getNamedAccounts } from 'hardhat';
-import { contracts, evm, wallet } from '../../../utils';
-import { then, when } from '../../../utils/bdd';
-import moment from 'moment';
-import { getNodeUrl } from '../../../../utils/network';
-import { setTestChainId } from '../../../../utils/deploy';
-import { STRATEGY_ADDER, SWAPPER_ADDER, SWAPPER_SETTER } from '../../../../deploy/001_trade_factory';
+import { ethers } from 'hardhat';
+import { evm, wallet } from '@test-utils';
+import { then, when } from '@test-utils/bdd';
+import { getNodeUrl } from '@utils/network';
+import { IERC20 } from '@typechained';
+import * as setup from '../setup';
 
 // We set a fixed block number so tests can cache blockchain state
 const FORK_BLOCK_NUMBER = 17080654;
@@ -18,62 +14,53 @@ const MAX_SLIPPAGE = 10_000; // 1%
 const AMOUNT_IN = utils.parseEther('10000');
 
 describe('Sushiswap', function () {
-  let swapperAdder: JsonRpcSigner;
-  let swapperSetter: JsonRpcSigner;
-  let strategyAdder: JsonRpcSigner;
-  let crvWhale: JsonRpcSigner;
-  let daiWhale: JsonRpcSigner;
-  let yMech: JsonRpcSigner;
   let strategy: Wallet;
-
   let tradeFactory: Contract;
-  let sushiswap: Contract;
 
-  let CRV: Contract;
-  let DAI: Contract;
+  let CRV: IERC20;
+  let DAI: IERC20;
+
+  let snapshotId: string;
 
   when('on polygon', () => {
+    const CHAIN_ID = 137;
+
     const CRV_ADDRESS = '0x172370d5cd63279efa6d502dab29171933a610af';
     const DAI_ADDRESS = '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063';
 
     const CRV_WHALE_ADDRESS = '0x3a8a6831a1e866c64bc07c3df0f7b79ac9ef2fa2';
-    const DAI_WHALE_ADDRESS = '0x27f8d03b3a2196956ed754badc28d73be8830a6e';
 
-    beforeEach(async () => {
-      const CHAIN_ID = 137;
+    before(async () => {
+      strategy = await wallet.generateRandom();
 
       await evm.reset({
         jsonRpcUrl: getNodeUrl('polygon'),
         blockNumber: FORK_BLOCK_NUMBER,
       });
 
-      const namedAccounts = await getNamedAccounts();
+      ({
+        fromToken: CRV,
+        toToken: DAI,
+        tradeFactory,
+      } = await setup.sync({
+        chainId: CHAIN_ID,
+        fixture: ['Common', 'Polygon', 'SyncSushiswap'],
+        swapper: {
+          name: 'SyncSushiswap',
+          type: 'sync',
+        },
+        fromTokenAddress: CRV_ADDRESS,
+        toTokenAddress: DAI_ADDRESS,
+        fromTokenWhaleAddress: CRV_WHALE_ADDRESS,
+        amountIn: AMOUNT_IN,
+        strategy,
+      }));
 
-      await ethers.provider.send('hardhat_setBalance', [namedAccounts.deployer, '0xffffffffffffffff']);
-      setTestChainId(CHAIN_ID);
-      await deployments.fixture(['Common', 'Polygon', 'SyncSushiswap'], { keepExistingDeployments: false });
+      snapshotId = await evm.snapshot.take();
+    });
 
-      swapperAdder = await wallet.impersonate(SWAPPER_ADDER[CHAIN_ID]);
-      swapperSetter = await wallet.impersonate(SWAPPER_SETTER[CHAIN_ID]);
-      strategyAdder = await wallet.impersonate(STRATEGY_ADDER[CHAIN_ID]);
-      crvWhale = await wallet.impersonate(CRV_WHALE_ADDRESS);
-      daiWhale = await wallet.impersonate(DAI_WHALE_ADDRESS);
-      yMech = await wallet.impersonate(namedAccounts.yMech);
-      strategy = await wallet.generateRandom();
-
-      CRV = await ethers.getContractAt(IERC20_ABI, CRV_ADDRESS);
-      DAI = await ethers.getContractAt(IERC20_ABI, DAI_ADDRESS);
-
-      tradeFactory = await ethers.getContract('TradeFactory');
-      sushiswap = await ethers.getContract('SyncSushiswap');
-
-      await CRV.connect(crvWhale).transfer(strategy.address, AMOUNT_IN);
-
-      await tradeFactory.connect(strategyAdder).grantRole(await tradeFactory.STRATEGY(), strategy.address);
-      await tradeFactory.connect(swapperAdder).addSwappers([sushiswap.address]);
-      await tradeFactory.connect(swapperSetter).setStrategySyncSwapper(strategy.address, sushiswap.address);
-
-      await CRV.connect(strategy).approve(tradeFactory.address, AMOUNT_IN);
+    beforeEach(async () => {
+      await evm.snapshot.revert(snapshotId);
     });
 
     describe('swap', () => {

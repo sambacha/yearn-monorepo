@@ -1,27 +1,20 @@
 import { expect } from 'chai';
-import { abi as IERC20_ABI } from '@openzeppelin/contracts/build/contracts/IERC20.json';
 import { JsonRpcSigner } from '@ethersproject/providers';
 import { Contract, utils, Wallet } from 'ethers';
-import { deployments, ethers, getNamedAccounts } from 'hardhat';
-import { contracts, evm, wallet } from '../../../utils';
-import { then, when } from '../../../utils/bdd';
-import moment from 'moment';
-import { setTestChainId } from '../../../../utils/deploy';
-import { getNodeUrl } from '../../../../utils/network';
-import oneinch, { SwapResponse } from '../../../../scripts/libraries/oneinch';
-import { STRATEGY_ADDER, SWAPPER_ADDER, SWAPPER_SETTER } from '../../../../deploy/001_trade_factory';
+import { evm, wallet } from '@test-utils';
+import { then } from '@test-utils/bdd';
+import { getNodeUrl } from '@utils/network';
+import oneinch, { SwapResponse } from '@scripts/libraries/oneinch';
+import { IERC20 } from '@typechained';
+import * as setup from '../setup';
 
 describe('OneInchAggregator', function () {
-  let swapperAdder: JsonRpcSigner;
-  let swapperSetter: JsonRpcSigner;
-  let strategyAdder: JsonRpcSigner;
-  let crvWhale: JsonRpcSigner;
-  let daiWhale: JsonRpcSigner;
   let yMech: JsonRpcSigner;
   let strategy: Wallet;
 
   let tradeFactory: Contract;
-  let oneInchAggregatorSwapper: Contract;
+
+  let snapshotId: string;
 
   const MAX_SLIPPAGE = 10_000; // 1%
   const GAS_LIMIT = 1_000_000;
@@ -33,14 +26,13 @@ describe('OneInchAggregator', function () {
     const DAI_ADDRESS = '0x6b175474e89094c44da98b954eedeac495271d0f';
 
     const CRV_WHALE_ADDRESS = '0xd2d43555134dc575bf7279f4ba18809645db0f1d';
-    const DAI_WHALE_ADDRESS = '0x5d3a536e4d6dbd6114cc1ead35777bab948e3643';
-
-    let CRV: Contract;
-    let DAI: Contract;
 
     const AMOUNT_IN = utils.parseEther('10000');
+
+    let CRV: IERC20;
+    let DAI: IERC20;
+
     let oneInchApiResponse: SwapResponse;
-    let forkBlockNumber: number;
 
     before(async () => {
       strategy = await wallet.generateRandom();
@@ -64,43 +56,31 @@ describe('OneInchAggregator', function () {
         gasLimit: GAS_LIMIT,
       });
 
-      forkBlockNumber = await ethers.provider.getBlockNumber();
+      ({
+        fromToken: CRV,
+        toToken: DAI,
+        yMech,
+        tradeFactory,
+      } = await setup.async({
+        chainId: CHAIN_ID,
+        fixture: ['Common', 'OneInchAggregator'],
+        swapper: {
+          name: 'OneInchAggregator',
+          type: 'async',
+        },
+        fromTokenAddress: CRV_ADDRESS,
+        toTokenAddress: DAI_ADDRESS,
+        fromTokenWhaleAddress: CRV_WHALE_ADDRESS,
+        amountIn: AMOUNT_IN,
+        maxSlippage: MAX_SLIPPAGE,
+        strategy,
+      }));
+
+      snapshotId = await evm.snapshot.take();
     });
 
     beforeEach(async () => {
-      await evm.reset({
-        jsonRpcUrl: getNodeUrl('mainnet'),
-        blockNumber: forkBlockNumber,
-      });
-
-      const namedAccounts = await getNamedAccounts();
-
-      swapperAdder = await wallet.impersonate(SWAPPER_ADDER[CHAIN_ID]);
-      swapperSetter = await wallet.impersonate(SWAPPER_SETTER[CHAIN_ID]);
-      strategyAdder = await wallet.impersonate(STRATEGY_ADDER[CHAIN_ID]);
-      crvWhale = await wallet.impersonate(CRV_WHALE_ADDRESS);
-      daiWhale = await wallet.impersonate(DAI_WHALE_ADDRESS);
-      yMech = await wallet.impersonate(namedAccounts.yMech);
-
-      await ethers.provider.send('hardhat_setBalance', [namedAccounts.deployer, '0xffffffffffffffff']);
-      await ethers.provider.send('hardhat_setBalance', [strategy.address, '0xffffffffffffffff']);
-      setTestChainId(CHAIN_ID);
-      await deployments.fixture(['Common', 'OneInchAggregator'], { keepExistingDeployments: false });
-
-      CRV = await ethers.getContractAt(IERC20_ABI, CRV_ADDRESS);
-      DAI = await ethers.getContractAt(IERC20_ABI, DAI_ADDRESS);
-
-      tradeFactory = await ethers.getContract('TradeFactory');
-      oneInchAggregatorSwapper = await ethers.getContract('OneInchAggregator');
-
-      await CRV.connect(crvWhale).transfer(strategy.address, AMOUNT_IN);
-
-      await tradeFactory.connect(strategyAdder).grantRole(await tradeFactory.STRATEGY(), strategy.address);
-      await tradeFactory.connect(swapperAdder).addSwappers([oneInchAggregatorSwapper.address]);
-      await tradeFactory.connect(swapperSetter).setStrategyAsyncSwapper(strategy.address, oneInchAggregatorSwapper.address);
-
-      await CRV.connect(strategy).approve(tradeFactory.address, AMOUNT_IN);
-      await tradeFactory.connect(strategy).create(CRV_ADDRESS, DAI_ADDRESS, AMOUNT_IN, MAX_SLIPPAGE, moment().add('30', 'minutes').unix());
+      await evm.snapshot.revert(snapshotId);
     });
 
     describe('swap', () => {
@@ -127,14 +107,12 @@ describe('OneInchAggregator', function () {
     const DAI_ADDRESS = '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063';
 
     const WMATIC_WHALE_ADDRESS = '0xadbf1854e5883eb8aa7baf50705338739e558e5b';
-    const DAI_WHALE_ADDRESS = '0x27f8d03b3a2196956ed754badc28d73be8830a6e';
 
-    let WMATIC: Contract;
-    let DAI: Contract;
+    let WMATIC: IERC20;
+    let DAI: IERC20;
 
     const AMOUNT_IN = utils.parseEther('1000');
     let oneInchApiResponse: SwapResponse;
-    let forkBlockNumber: number;
 
     before(async () => {
       strategy = await wallet.generateRandom();
@@ -158,46 +136,31 @@ describe('OneInchAggregator', function () {
         gasLimit: GAS_LIMIT,
       });
 
-      forkBlockNumber = await ethers.provider.getBlockNumber();
+      ({
+        fromToken: WMATIC,
+        toToken: DAI,
+        yMech,
+        tradeFactory,
+      } = await setup.async({
+        chainId: CHAIN_ID,
+        fixture: ['Common', 'OneInchAggregator'],
+        swapper: {
+          name: 'OneInchAggregator',
+          type: 'async',
+        },
+        fromTokenAddress: WMATIC_ADDRESS,
+        toTokenAddress: DAI_ADDRESS,
+        fromTokenWhaleAddress: WMATIC_WHALE_ADDRESS,
+        amountIn: AMOUNT_IN,
+        maxSlippage: MAX_SLIPPAGE,
+        strategy,
+      }));
+
+      snapshotId = await evm.snapshot.take();
     });
 
     beforeEach(async () => {
-      await evm.reset({
-        jsonRpcUrl: getNodeUrl('polygon'),
-        blockNumber: forkBlockNumber,
-      });
-
-      const namedAccounts = await getNamedAccounts();
-
-      await ethers.provider.send('hardhat_setBalance', [namedAccounts.deployer, '0xffffffffffffffff']);
-
-      swapperAdder = await wallet.impersonate(SWAPPER_ADDER[CHAIN_ID]);
-      swapperSetter = await wallet.impersonate(SWAPPER_SETTER[CHAIN_ID]);
-      strategyAdder = await wallet.impersonate(STRATEGY_ADDER[CHAIN_ID]);
-      crvWhale = await wallet.impersonate(WMATIC_WHALE_ADDRESS);
-      daiWhale = await wallet.impersonate(DAI_WHALE_ADDRESS);
-      yMech = await wallet.impersonate(namedAccounts.yMech);
-
-      await ethers.provider.send('hardhat_setBalance', [namedAccounts.deployer, '0xffffffffffffffff']);
-      await ethers.provider.send('hardhat_setBalance', [strategy.address, '0xffffffffffffffff']);
-      setTestChainId(CHAIN_ID);
-      await deployments.fixture(['TradeFactory', 'OneInchAggregator'], { keepExistingDeployments: false });
-
-      WMATIC = await ethers.getContractAt(IERC20_ABI, WMATIC_ADDRESS);
-      DAI = await ethers.getContractAt(IERC20_ABI, DAI_ADDRESS);
-
-      tradeFactory = await ethers.getContract('TradeFactory');
-      oneInchAggregatorSwapper = await ethers.getContract('OneInchAggregator');
-
-      await WMATIC.connect(crvWhale).transfer(strategy.address, AMOUNT_IN);
-
-      await tradeFactory.connect(strategyAdder).grantRole(await tradeFactory.STRATEGY(), strategy.address);
-      await tradeFactory.connect(swapperAdder).addSwappers([oneInchAggregatorSwapper.address]);
-      await tradeFactory.connect(swapperSetter).setStrategyAsyncSwapper(strategy.address, oneInchAggregatorSwapper.address);
-
-      await WMATIC.connect(strategy).approve(tradeFactory.address, AMOUNT_IN);
-
-      await tradeFactory.connect(strategy).create(WMATIC_ADDRESS, DAI_ADDRESS, AMOUNT_IN, MAX_SLIPPAGE, moment().add('30', 'minutes').unix());
+      await evm.snapshot.revert(snapshotId);
     });
 
     describe('swap', () => {

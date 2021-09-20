@@ -2,8 +2,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 import { constants, Contract, utils } from 'ethers';
 import { ethers } from 'hardhat';
 import moment from 'moment';
-import { erc20, fixtures } from '../../utils';
-import { contract, given, then, when } from '../../utils/bdd';
+import { erc20, evm, fixtures } from '@test-utils';
+import { contract, given, then } from '@test-utils/bdd';
 import { expect } from 'chai';
 
 contract('TradeFactory', () => {
@@ -28,13 +28,14 @@ contract('TradeFactory', () => {
   let tradeFactory: Contract;
   let otcPool: Contract;
 
+  let snapshotId: string;
+
   const firstTradeAmountIn = utils.parseEther('10');
   const secondTradeAmountIn = utils.parseEther('6.9');
 
   const offeredByOTC = utils.parseEther('59');
 
   const maxSlippage = 10_000; // 1%
-  const INITIAL_LIQUIDITY = utils.parseEther('100000');
 
   before('create fixture loader', async () => {
     [
@@ -51,9 +52,6 @@ contract('TradeFactory', () => {
       swapperSetter,
       otcPoolGovernor,
     ] = await ethers.getSigners();
-  });
-
-  beforeEach(async () => {
     ({ mechanicsRegistry } = await fixtures.machineryFixture(mechanic.address));
 
     ({ tradeFactory, otcPool, uniswapV2AsyncSwapper } = await fixtures.uniswapV2SwapperFixture(
@@ -107,6 +105,12 @@ contract('TradeFactory', () => {
     await tokenOut.connect(hodler).transfer(otcPoolGovernor.address, offeredByOTC);
     await tokenOut.connect(otcPoolGovernor).approve(otcPool.address, offeredByOTC);
     await otcPool.connect(otcPoolGovernor).create(tokenOut.address, offeredByOTC);
+
+    snapshotId = await evm.snapshot.take();
+  });
+
+  beforeEach(async () => {
+    await evm.snapshot.revert(snapshotId);
   });
 
   describe('execute otc', () => {

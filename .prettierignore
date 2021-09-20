@@ -10,6 +10,7 @@
 workspace.code-workspace
 
 # Hardhat
+typechained
 artifacts
 cache
 deployments

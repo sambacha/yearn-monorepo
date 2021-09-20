@@ -1,10 +1,9 @@
 import { ethers, getChainId } from 'hardhat';
-import zrx from './libraries/zrx';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
-import uniswap from './libraries/uniswap-v2';
+import uniswap from '@libraries/uniswap-v2';
 import moment from 'moment';
-import { SPOOKYSWAP_FACTORY, SPOOKYSWAP_ROUTER, WETH, WFTM } from '../deploy/fantom-swappers/spookyswap';
-import { SPIRITSWAP_FACTORY, SPIRITSWAP_ROUTER } from '../deploy/fantom-swappers/spiritswap';
+import { SPOOKYSWAP_FACTORY, SPOOKYSWAP_ROUTER, WETH, WFTM } from '@deploy/fantom-swappers/spookyswap';
+import { SPIRITSWAP_FACTORY, SPIRITSWAP_ROUTER } from '@deploy/fantom-swappers/spiritswap';
 import { utils } from 'ethers';
 
 const SPOOKY_TOKEN = '0x841fad6eae12c286d1fd18d1d525dffa75c7effe';
