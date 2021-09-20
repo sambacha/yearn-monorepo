@@ -1,5 +1,5 @@
 {
-  "name": "strategy-swappers",
+  "name": "yswaps",
   "version": "1.0.0",
   "description": "Yearn strategy swappers",
   "keywords": [
@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lbertenasco/strategy-swappers.git"
+    "url": "git+https://github.com/yearn/yswaps.git"
   },
   "scripts": {
     "compile": "npx hardhat compile",
@@ -98,7 +98,6 @@
   "authors": [
     {
       "name": "Luciano Bertenasco",
-      "email": "mail",
       "url": "https://github.com/lbertenasco"
     },
     {
