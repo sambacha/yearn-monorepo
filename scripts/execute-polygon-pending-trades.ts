@@ -1,8 +1,7 @@
 import { ethers, getChainId } from 'hardhat';
 import zrx from '@libraries/zrx';
 import oneinch from '@libraries/oneinch';
-import { TransactionResponse } from '@ethersproject/abstract-provider';
-import { wallet } from '@test-utils';
+import * as wallet from '@test-utils/wallet';
 import moment from 'moment';
 
 async function main() {

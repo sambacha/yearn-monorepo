@@ -1,5 +1,5 @@
 import { ethers, getChainId } from 'hardhat';
-import { TransactionResponse } from '@ethersproject/abstract-provider';
+import sleep from 'sleep-promise';
 import uniswap from '@libraries/uniswap-v2';
 import moment from 'moment';
 import { SPOOKYSWAP_FACTORY, SPOOKYSWAP_ROUTER, WETH, WFTM } from '@deploy/fantom-swappers/spookyswap';
@@ -30,26 +30,27 @@ async function main() {
 
     if (compareAddresses(pendingTrade._swapper, spookyswapSwapper.address)) {
       console.log(`Executing ${pendingTrade._id.toString()} through Spookyswap`);
-      data = await uniswap.getBestPathEncoded({
+      ({ data } = await uniswap.getBestPathEncoded({
         tokenIn: pendingTrade._tokenIn,
         tokenOut: pendingTrade._tokenOut,
         amountIn: pendingTrade._amountIn,
         uniswapV2Router: SPOOKYSWAP_ROUTER,
         uniswapV2Factory: SPOOKYSWAP_FACTORY,
         hopTokensToTest: [SPOOKY_TOKEN, WFTM, WETH],
-      });
+      }));
     } else if (compareAddresses(pendingTrade._swapper, spiritswapSwapper.address)) {
       console.log(`Executing ${pendingTrade._id.toString()} through Spiritswap`);
-      data = await uniswap.getBestPathEncoded({
+      ({ data } = await uniswap.getBestPathEncoded({
         tokenIn: pendingTrade._tokenIn,
         tokenOut: pendingTrade._tokenOut,
         amountIn: pendingTrade._amountIn,
         uniswapV2Router: SPIRITSWAP_ROUTER,
         uniswapV2Factory: SPIRITSWAP_FACTORY,
         hopTokensToTest: [SPIRIT_TOKEN, WFTM, WETH],
-      });
+      }));
     }
     await tradeFactory['execute(uint256,bytes)'](pendingTrade._id, data, { gasLimit: 8_000_000 });
+    await sleep(5000);
   }
 }
 
