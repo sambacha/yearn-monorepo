@@ -1,4 +1,3 @@
-import { Contract, ContractFactory } from '@ethersproject/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { expect } from 'chai';
@@ -7,17 +6,18 @@ import { behaviours, contracts, erc20, evm, wallet } from '../utils';
 import { contract, given, then, when } from '../utils/bdd';
 import { BigNumber } from '@ethersproject/bignumber';
 import { constants, utils } from 'ethers';
+import { IERC20, SwapperMock, SwapperMock__factory } from '@typechained';
 
 contract('Swapper', () => {
   let governor: SignerWithAddress;
   let tradeFactory: SignerWithAddress;
-  let swapperFactory: ContractFactory;
-  let swapper: Contract;
+  let swapperFactory: SwapperMock__factory;
+  let swapper: SwapperMock;
   let snapshotId: string;
 
   before(async () => {
     [governor, tradeFactory] = await ethers.getSigners();
-    swapperFactory = await ethers.getContractFactory('contracts/mock/Swapper.sol:SwapperMock');
+    swapperFactory = await ethers.getContractFactory<SwapperMock__factory>('contracts/mock/Swapper.sol:SwapperMock');
     swapper = await swapperFactory.deploy(governor.address, tradeFactory.address);
     snapshotId = await evm.snapshot.take();
   });
@@ -47,11 +47,11 @@ contract('Swapper', () => {
     });
     when('data is valid', () => {
       let deploymentTx: TransactionResponse;
-      let deploymentContract: Contract;
+      let deploymentContract: SwapperMock;
       given(async () => {
         const deployment = await contracts.deploy(swapperFactory, [governor.address, tradeFactory.address]);
         deploymentTx = deployment.tx as TransactionResponse;
-        deploymentContract = deployment.contract!;
+        deploymentContract = deployment.contract! as SwapperMock;
       });
       then('governor is set', async () => {
         expect(await deploymentContract.governor()).to.be.equal(governor.address);
@@ -92,7 +92,7 @@ contract('Swapper', () => {
       withData: true,
     });
     when('everything is valid', () => {
-      let tokenIn: Contract;
+      let tokenIn: IERC20;
       let swapTx: TransactionResponse;
       let receiver: string;
       let tokenOut: string;

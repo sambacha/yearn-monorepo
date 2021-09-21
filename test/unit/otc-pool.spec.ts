@@ -1,4 +1,3 @@
-import { Contract, ContractFactory } from '@ethersproject/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { expect } from 'chai';
@@ -7,17 +6,18 @@ import { behaviours, contracts, erc20, evm, wallet } from '../utils';
 import { contract, given, then, when } from '../utils/bdd';
 import { BigNumber } from '@ethersproject/bignumber';
 import { utils } from 'ethers';
+import { OTCPool, OTCPool__factory } from '@typechained';
 
 contract('OTCPool', () => {
   let governor: SignerWithAddress;
   let tradeFactory: SignerWithAddress;
-  let otcPoolFactory: ContractFactory;
-  let otcPool: Contract;
+  let otcPoolFactory: OTCPool__factory;
+  let otcPool: OTCPool;
   let snapshotId: string;
 
   before(async () => {
     [governor, tradeFactory] = await ethers.getSigners();
-    otcPoolFactory = await ethers.getContractFactory('contracts/OTCPool.sol:OTCPool');
+    otcPoolFactory = await ethers.getContractFactory<OTCPool__factory>('contracts/OTCPool.sol:OTCPool');
     otcPool = await otcPoolFactory.deploy(governor.address, tradeFactory.address);
     snapshotId = await evm.snapshot.take();
   });

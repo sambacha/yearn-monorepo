@@ -1,4 +1,3 @@
-import { Contract, ContractFactory } from '@ethersproject/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { expect } from 'chai';
@@ -6,20 +5,21 @@ import { ethers } from 'hardhat';
 import { evm, wallet } from '@test-utils';
 import { contract, given, then, when } from '@test-utils/bdd';
 import { constants } from 'ethers';
+import { TradeFactorySwapperHandlerMock, TradeFactorySwapperHandlerMock__factory } from '@typechained';
 
 contract('TradeFactorySwapperHandler', () => {
   let masterAdmin: SignerWithAddress;
   let swapperAdder: SignerWithAddress;
   let swapperSetter: SignerWithAddress;
 
-  let tradeFactoryFactory: ContractFactory;
-  let tradeFactory: Contract;
+  let tradeFactoryFactory: TradeFactorySwapperHandlerMock__factory;
+  let tradeFactory: TradeFactorySwapperHandlerMock;
 
   let snapshotId: string;
 
   before(async () => {
     [masterAdmin, swapperAdder, swapperSetter] = await ethers.getSigners();
-    tradeFactoryFactory = await ethers.getContractFactory(
+    tradeFactoryFactory = await ethers.getContractFactory<TradeFactorySwapperHandlerMock__factory>(
       'contracts/mock/TradeFactory/TradeFactorySwapperHandler.sol:TradeFactorySwapperHandlerMock'
     );
     tradeFactory = await tradeFactoryFactory.deploy(masterAdmin.address, swapperAdder.address, swapperSetter.address);
