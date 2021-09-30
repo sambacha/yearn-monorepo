@@ -11,7 +11,7 @@ import moment from 'moment';
 type SetupParams = {
   chainId: number;
   fixture: string[];
-  swapper: Swapper;
+  swapper: string;
   fromTokenAddress: string;
   toTokenAddress: string;
   fromTokenWhaleAddress: string;
@@ -24,11 +24,7 @@ type SetupResponse = {
   toToken: IERC20;
   yMech: JsonRpcSigner;
   tradeFactory: TradeFactory;
-};
-
-type Swapper = {
-  name: string;
-  type: 'sync' | 'async';
+  swapper: ISwapper;
 };
 
 const integrationSwapperSetup = async ({
@@ -44,7 +40,6 @@ const integrationSwapperSetup = async ({
   const namedAccounts = await getNamedAccounts();
 
   const swapperAdder = await wallet.impersonate(SWAPPER_ADDER[chainId]);
-  const swapperSetter = await wallet.impersonate(SWAPPER_SETTER[chainId]);
   const strategyAdder = await wallet.impersonate(STRATEGY_ADDER[chainId]);
   const fromTokenWhale = await wallet.impersonate(fromTokenWhaleAddress);
   const yMech = await wallet.impersonate(namedAccounts.yMech);
@@ -59,22 +54,16 @@ const integrationSwapperSetup = async ({
   const toToken = await ethers.getContractAt<IERC20>(IERC20_ABI, toTokenAddress);
 
   const tradeFactory = await ethers.getContract<TradeFactory>('TradeFactory');
-  const deployedSwapper = await ethers.getContract<ISwapper>(swapper.name);
+  const deployedSwapper = await ethers.getContract<ISwapper>(swapper);
 
   await fromToken.connect(fromTokenWhale).transfer(strategy.address, amountIn);
 
   await tradeFactory.connect(strategyAdder).grantRole(await tradeFactory.STRATEGY(), strategy.address);
   await tradeFactory.connect(swapperAdder).addSwappers([deployedSwapper.address]);
 
-  if (swapper.type == 'async') {
-    await tradeFactory.connect(swapperSetter).setStrategyAsyncSwapper(strategy.address, deployedSwapper.address);
-  } else {
-    await tradeFactory.connect(swapperSetter).setStrategySyncSwapper(strategy.address, deployedSwapper.address);
-  }
-
   await fromToken.connect(strategy).approve(tradeFactory.address, amountIn);
 
-  return { fromToken, toToken, yMech, tradeFactory };
+  return { fromToken, toToken, yMech, tradeFactory, swapper: deployedSwapper };
 };
 
 type SetupAsyncParams = SetupParams & {
@@ -90,6 +79,8 @@ export const async = async (setup: SetupAsyncParams): Promise<SetupResponse> => 
 };
 
 export const sync = async (setup: SetupParams): Promise<SetupResponse> => {
+  const swapperSetter = await wallet.impersonate(SWAPPER_SETTER[setup.chainId]);
   const response = await integrationSwapperSetup(setup);
+  await response.tradeFactory.connect(swapperSetter).setStrategySyncSwapper(setup.strategy.address, response.swapper.address);
   return response;
 };

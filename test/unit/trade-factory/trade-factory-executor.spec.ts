@@ -67,7 +67,6 @@ contract('TradeFactoryExecutor', () => {
     asyncSwapper.SWAPPER_TYPE.returns(0);
     syncSwapper.SWAPPER_TYPE.returns(1);
     await executor.connect(swapperSetter).setStrategySyncSwapper(strategy.address, syncSwapper.address);
-    await executor.connect(swapperSetter).setStrategyAsyncSwapper(strategy.address, asyncSwapper.address);
     snapshotId = await evm.snapshot.take();
   });
 
@@ -170,7 +169,9 @@ contract('TradeFactoryExecutor', () => {
     // TODO: Only mechanic
     when('executing a trade thats not pending', () => {
       then('tx is reverted with reason', async () => {
-        await expect(executor['execute(uint256,bytes)'](tradeId.add(1), data)).to.be.revertedWith('InvalidTrade()');
+        await expect(executor['execute(uint256,address,bytes)'](tradeId.add(1), asyncSwapper.address, data)).to.be.revertedWith(
+          'InvalidTrade()'
+        );
       });
     });
     when('trade has expired', () => {
@@ -178,19 +179,15 @@ contract('TradeFactoryExecutor', () => {
         await evm.advanceToTimeAndBlock(deadline + 1);
       });
       then('tx is reverted with reason', async () => {
-        await expect(executor['execute(uint256,bytes)'](tradeId, data)).to.be.revertedWith('ExpiredTrade()');
+        await expect(executor['execute(uint256,address,bytes)'](tradeId, asyncSwapper.address, data)).to.be.revertedWith('ExpiredTrade()');
       });
     });
     when('executing a trade where swapper has been removed', () => {
       given(async () => {
-        const otherAsyncSwapper = await smock.fake<Swapper>(swapperABI);
-        await executor.connect(swapperAdder).addSwappers([otherAsyncSwapper.address, syncSwapper.address]);
-        otherAsyncSwapper.SWAPPER_TYPE.returns(0);
-        await executor.connect(swapperSetter).setStrategyAsyncSwapper(strategy.address, otherAsyncSwapper.address);
         await executor.connect(swapperAdder).removeSwappers([asyncSwapper.address]);
       });
       then('tx is reverted with reason', async () => {
-        await expect(executor['execute(uint256,bytes)'](tradeId, data)).to.be.revertedWith('InvalidSwapper()');
+        await expect(executor['execute(uint256,address,bytes)'](tradeId, asyncSwapper.address, data)).to.be.revertedWith('InvalidSwapper()');
       });
     });
     when('is not the first trade being executed of token in & swapper', () => {
@@ -202,7 +199,7 @@ contract('TradeFactoryExecutor', () => {
         asyncSwapper.swap.returns(receivedAmount);
         initialStrategyBalance = await token.balanceOf(strategy.address);
         initialSwapperBalance = await token.balanceOf(asyncSwapper.address);
-        executeTx = await executor['execute(uint256,bytes)'](tradeId, data);
+        executeTx = await executor['execute(uint256,address,bytes)'](tradeId, asyncSwapper.address, data);
       });
       then('approve from strategy to trade factory gets reduced', async () => {
         expect(await token.allowance(strategy.address, asyncSwapper.address)).to.be.equal(0);
@@ -296,7 +293,6 @@ contract('TradeFactoryExecutor', () => {
         initialAmount: utils.parseEther('10000'),
       });
       await executor.connect(strategyAdder).grantRole(await executor.STRATEGY(), otherStrat.address);
-      await executor.connect(swapperSetter).setStrategyAsyncSwapper(otherStrat.address, asyncSwapper.address);
       // Enable COW for both strategies
       await executor.connect(swapperSetter).setStrategyPermissions(strategy.address, '0x02');
       await executor.connect(swapperSetter).setStrategyPermissions(otherStrat.address, '0x02');

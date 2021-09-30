@@ -14,6 +14,7 @@ typechained
 artifacts
 cache
 deployments
+gasReporterOutput.json
 
 # JS
 node_modules

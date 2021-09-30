@@ -1,18 +1,19 @@
 import { expect } from 'chai';
 import { JsonRpcSigner } from '@ethersproject/providers';
-import { Contract, utils, Wallet } from 'ethers';
+import { utils, Wallet } from 'ethers';
 import { evm, wallet } from '@test-utils';
 import { then } from '@test-utils/bdd';
 import { getNodeUrl } from '@utils/network';
 import oneinch, { SwapResponse } from '@scripts/libraries/oneinch';
-import { IERC20 } from '@typechained';
+import { IERC20, ISwapper, TradeFactory } from '@typechained';
 import * as setup from '../setup';
 
 describe('OneInchAggregator', function () {
   let yMech: JsonRpcSigner;
   let strategy: Wallet;
 
-  let tradeFactory: Contract;
+  let tradeFactory: TradeFactory;
+  let swapper: ISwapper;
 
   let snapshotId: string;
 
@@ -61,13 +62,11 @@ describe('OneInchAggregator', function () {
         toToken: DAI,
         yMech,
         tradeFactory,
+        swapper,
       } = await setup.async({
         chainId: CHAIN_ID,
         fixture: ['Common', 'OneInchAggregator'],
-        swapper: {
-          name: 'OneInchAggregator',
-          type: 'async',
-        },
+        swapper: 'OneInchAggregator',
         fromTokenAddress: CRV_ADDRESS,
         toTokenAddress: DAI_ADDRESS,
         fromTokenWhaleAddress: CRV_WHALE_ADDRESS,
@@ -85,7 +84,7 @@ describe('OneInchAggregator', function () {
 
     describe('swap', () => {
       beforeEach(async () => {
-        await tradeFactory.connect(yMech)['execute(uint256,bytes)'](1, oneInchApiResponse.tx.data, {
+        await tradeFactory.connect(yMech)['execute(uint256,address,bytes)'](1, swapper.address, oneInchApiResponse.tx.data, {
           gasLimit: GAS_LIMIT + GAS_LIMIT * 0.25,
         });
       });
@@ -141,13 +140,11 @@ describe('OneInchAggregator', function () {
         toToken: DAI,
         yMech,
         tradeFactory,
+        swapper,
       } = await setup.async({
         chainId: CHAIN_ID,
         fixture: ['Common', 'OneInchAggregator'],
-        swapper: {
-          name: 'OneInchAggregator',
-          type: 'async',
-        },
+        swapper: 'OneInchAggregator',
         fromTokenAddress: WMATIC_ADDRESS,
         toTokenAddress: DAI_ADDRESS,
         fromTokenWhaleAddress: WMATIC_WHALE_ADDRESS,
@@ -165,7 +162,7 @@ describe('OneInchAggregator', function () {
 
     describe('swap', () => {
       beforeEach(async () => {
-        await tradeFactory.connect(yMech)['execute(uint256,bytes)'](1, oneInchApiResponse.tx.data, {
+        await tradeFactory.connect(yMech)['execute(uint256,address,bytes)'](1, swapper.address, oneInchApiResponse.tx.data, {
           gasLimit: GAS_LIMIT + GAS_LIMIT * 0.25,
         });
       });

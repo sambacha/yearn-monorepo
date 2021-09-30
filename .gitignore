@@ -12,6 +12,7 @@ artifacts
 typechained
 deployments/hardhat
 deployments/localhost
+gasReporterOutput.json
 
 # Config files
 .env

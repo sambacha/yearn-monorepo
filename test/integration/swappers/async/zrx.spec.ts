@@ -6,13 +6,14 @@ import { then } from '@test-utils/bdd';
 import { getNodeUrl } from '@utils/network';
 import zrx, { QuoteResponse } from '@scripts/libraries/zrx';
 import * as setup from '../setup';
-import { IERC20, TradeFactory } from '@typechained';
+import { IERC20, ISwapper, TradeFactory } from '@typechained';
 
 describe('ZRX', function () {
   let yMech: JsonRpcSigner;
   let strategy: Wallet;
 
   let tradeFactory: TradeFactory;
+  let swapper: ISwapper;
 
   let snapshotId: string;
 
@@ -55,13 +56,11 @@ describe('ZRX', function () {
         toToken: DAI,
         yMech,
         tradeFactory,
+        swapper,
       } = await setup.async({
         chainId: CHAIN_ID,
         fixture: ['Common', 'ZRX'],
-        swapper: {
-          name: 'ZRX',
-          type: 'async',
-        },
+        swapper: 'ZRX',
         fromTokenAddress: CRV_ADDRESS,
         toTokenAddress: DAI_ADDRESS,
         fromTokenWhaleAddress: CRV_WHALE_ADDRESS,
@@ -79,7 +78,7 @@ describe('ZRX', function () {
 
     describe('swap', () => {
       beforeEach(async () => {
-        await tradeFactory.connect(yMech)['execute(uint256,bytes)'](1, zrxAPIResponse.data);
+        await tradeFactory.connect(yMech)['execute(uint256,address,bytes)'](1, swapper.address, zrxAPIResponse.data);
       });
 
       then('CRV gets taken from strategy', async () => {
@@ -127,13 +126,11 @@ describe('ZRX', function () {
         toToken: DAI,
         yMech,
         tradeFactory,
+        swapper,
       } = await setup.async({
         chainId: CHAIN_ID,
         fixture: ['Common', 'ZRX'],
-        swapper: {
-          name: 'ZRX',
-          type: 'async',
-        },
+        swapper: 'ZRX',
         fromTokenAddress: WMATIC_ADDRESS,
         toTokenAddress: DAI_ADDRESS,
         fromTokenWhaleAddress: WMATIC_WHALE_ADDRESS,
@@ -151,7 +148,7 @@ describe('ZRX', function () {
 
     describe('swap', () => {
       beforeEach(async () => {
-        await tradeFactory.connect(yMech)['execute(uint256,bytes)'](1, zrxAPIResponse.data);
+        await tradeFactory.connect(yMech)['execute(uint256,address,bytes)'](1, swapper.address, zrxAPIResponse.data);
       });
 
       then('WMATIC gets taken from strategy and DAI gets airdropped to strategy', async () => {

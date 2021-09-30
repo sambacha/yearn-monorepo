@@ -71,7 +71,6 @@ contract.only('TradeFactory', () => {
     await tradeFactory.connect(swapperAdder).addSwappers([uniswapV2AsyncSwapper.address]);
     await tradeFactory.connect(swapperAdder).addSwappers([uniswapV2SyncSwapper.address]);
     await tradeFactory.connect(swapperSetter).setStrategySyncSwapper(strategy.address, uniswapV2SyncSwapper.address);
-    await tradeFactory.connect(swapperSetter).setStrategyAsyncSwapper(strategy.address, uniswapV2AsyncSwapper.address);
 
     tokenIn = await erc20.deploy({
       name: 'TA',
@@ -144,7 +143,7 @@ contract.only('TradeFactory', () => {
       });
       // We can do this since ratio is 1 = 1
       minAmountOut = amountIn.sub(amountIn.mul(maxSlippage).div(10000 / 100));
-      await tradeFactory.connect(mechanic)['execute(uint256,bytes)'](1, bestPath.data);
+      await tradeFactory.connect(mechanic)['execute(uint256,address,bytes)'](1, uniswapV2AsyncSwapper.address, bestPath.data);
     });
     then('tokens in gets taken from strategy', async () => {
       expect(await tokenIn.balanceOf(strategy.address)).to.equal(0);

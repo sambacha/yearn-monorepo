@@ -45,10 +45,7 @@ describe('Spookyswap', function () {
       } = await setup.sync({
         chainId: CHAIN_ID,
         fixture: ['Common', 'Fantom', 'SyncSpookyswap'],
-        swapper: {
-          name: 'SyncSpookyswap',
-          type: 'sync',
-        },
+        swapper: 'SyncSpookyswap',
         fromTokenAddress: CRV_ADDRESS,
         toTokenAddress: DAI_ADDRESS,
         fromTokenWhaleAddress: CRV_WHALE_ADDRESS,

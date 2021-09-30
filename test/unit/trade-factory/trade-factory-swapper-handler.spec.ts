@@ -157,33 +157,6 @@ contract('TradeFactorySwapperHandler', () => {
     });
   });
 
-  describe('setStrategyAsyncSwapper', () => {
-    // ONLY SWAPPER SETTER
-    when('strategy is zero address', () => {
-      then('tx is reverted with message');
-    });
-    when('swapper is zero address', () => {
-      then('tx is reverted with message');
-    });
-    when('trying to set an sync swapper', () => {
-      then('tx is reverted with message');
-    });
-    when('swapper is not an added swapper', () => {
-      then('tx is reverted with message');
-    });
-    when(`strategy didn't have any async swapper set`, () => {
-      then('sets async swapper of strategy');
-      then('adds strategy to swapper strategies');
-      then('emits event');
-    });
-    when('strategy had an async swapper set', () => {
-      then('removes strategy from old swapper strategies');
-      then('sets async swapper of strategy');
-      then('adds strategy to swapper strategies');
-      then('emits event');
-    });
-  });
-
   describe('addSwappers', () => {
     // ONLY SWAPPER ADDER
     when('adding swappers with zero address', () => {

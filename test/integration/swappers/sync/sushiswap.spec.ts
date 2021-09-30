@@ -45,10 +45,7 @@ describe('Sushiswap', function () {
       } = await setup.sync({
         chainId: CHAIN_ID,
         fixture: ['Common', 'Polygon', 'SyncSushiswap'],
-        swapper: {
-          name: 'SyncSushiswap',
-          type: 'sync',
-        },
+        swapper: 'SyncSushiswap',
         fromTokenAddress: CRV_ADDRESS,
         toTokenAddress: DAI_ADDRESS,
         fromTokenWhaleAddress: CRV_WHALE_ADDRESS,

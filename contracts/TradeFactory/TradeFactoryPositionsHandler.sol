@@ -9,7 +9,6 @@ interface ITradeFactoryPositionsHandler {
   struct Trade {
     uint256 _id;
     address _strategy;
-    address _swapper;
     address _tokenIn;
     address _tokenOut;
     uint256 _amountIn;
@@ -20,7 +19,6 @@ interface ITradeFactoryPositionsHandler {
   event TradeCreated(
     uint256 indexed _id,
     address _strategy,
-    address _swapper,
     address _tokenIn,
     address _tokenOut,
     uint256 _amountIn,
@@ -44,7 +42,6 @@ interface ITradeFactoryPositionsHandler {
     returns (
       uint256 _id,
       address _strategy,
-      address _swapper,
       address _tokenIn,
       address _tokenOut,
       uint256 _amountIn,
@@ -65,8 +62,6 @@ interface ITradeFactoryPositionsHandler {
   ) external returns (uint256 _id);
 
   function cancelPendingTrades(uint256[] calldata _ids) external;
-
-  function changePendingTradesSwapper(uint256[] calldata _ids, address _swapper) external;
 
   function mergePendingTrades(uint256 _anchorTradeId, uint256[] calldata _toMergeIds) external;
 }
@@ -111,36 +106,17 @@ abstract contract TradeFactoryPositionsHandler is ITradeFactoryPositionsHandler,
     uint256 _maxSlippage,
     uint256 _deadline
   ) external override onlyRole(STRATEGY) returns (uint256 _id) {
-    if (strategyAsyncSwapper[msg.sender] == address(0)) revert InvalidSwapper();
     if (_tokenIn == address(0) || _tokenOut == address(0)) revert CommonErrors.ZeroAddress();
     if (_amountIn == 0) revert CommonErrors.ZeroAmount();
     if (_maxSlippage == 0) revert CommonErrors.ZeroSlippage();
     if (_deadline <= block.timestamp) revert InvalidDeadline();
     _id = _tradeCounter;
-    Trade memory _trade = Trade(
-      _tradeCounter,
-      msg.sender,
-      strategyAsyncSwapper[msg.sender],
-      _tokenIn,
-      _tokenOut,
-      _amountIn,
-      _maxSlippage,
-      _deadline
-    );
+    Trade memory _trade = Trade(_tradeCounter, msg.sender, _tokenIn, _tokenOut, _amountIn, _maxSlippage, _deadline);
     pendingTradesById[_trade._id] = _trade;
     _pendingTradesByOwner[msg.sender].add(_trade._id);
     _pendingTradesIds.add(_trade._id);
     _tradeCounter += 1;
-    emit TradeCreated(
-      _trade._id,
-      _trade._strategy,
-      _trade._swapper,
-      _trade._tokenIn,
-      _trade._tokenOut,
-      _trade._amountIn,
-      _trade._maxSlippage,
-      _trade._deadline
-    );
+    emit TradeCreated(_trade._id, _trade._strategy, _trade._tokenIn, _trade._tokenOut, _trade._amountIn, _trade._maxSlippage, _trade._deadline);
   }
 
   function cancelPendingTrades(uint256[] calldata _ids) external override onlyRole(STRATEGY) {
@@ -150,17 +126,6 @@ abstract contract TradeFactoryPositionsHandler is ITradeFactoryPositionsHandler,
       _removePendingTrade(msg.sender, _ids[i]);
     }
     emit TradesCanceled(msg.sender, _ids);
-  }
-
-  // onlyStrategyHandler or master admin ?
-  function changePendingTradesSwapper(uint256[] calldata _ids, address _swapper) external override onlyRole(TRADES_MODIFIER) {
-    if (ISwapper(_swapper).SWAPPER_TYPE() != ISwapper.SwapperType.ASYNC) revert NotAsyncSwapper();
-    if (!_swappers.contains(_swapper)) revert InvalidSwapper();
-    for (uint256 i; i < _ids.length; i++) {
-      if (!_pendingTradesIds.contains(_ids[i])) revert InvalidTrade();
-      pendingTradesById[_ids[i]]._swapper = _swapper;
-    }
-    emit TradesSwapperChanged(_ids, _swapper);
   }
 
   function mergePendingTrades(uint256 _anchorTradeId, uint256[] calldata _toMergeIds) external override onlyRole(TRADES_MODIFIER) {

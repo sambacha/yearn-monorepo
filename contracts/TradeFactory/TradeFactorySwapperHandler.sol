@@ -24,8 +24,6 @@ interface ITradeFactorySwapperHandler {
 
   function strategySyncSwapper(address _strategy) external view returns (address _swapper);
 
-  function strategyAsyncSwapper(address _strategy) external view returns (address _swapper);
-
   function strategyPermissions(address _strategy) external view returns (bytes1 _permissions);
 
   function swappers() external view returns (address[] memory _swappersList);
@@ -39,8 +37,6 @@ interface ITradeFactorySwapperHandler {
   function setOTCPool(address _otcPool) external;
 
   function setStrategySyncSwapper(address _strategy, address _swapper) external;
-
-  function setStrategyAsyncSwapper(address _strategy, address _swapper) external;
 
   function addSwappers(address[] memory __swappers) external;
 
@@ -62,8 +58,6 @@ abstract contract TradeFactorySwapperHandler is ITradeFactorySwapperHandler, Tra
   EnumerableSet.AddressSet internal _swappers;
   // swapper -> strategy list (useful to know if we can safely deprecate a swapper)
   mapping(address => EnumerableSet.AddressSet) internal _swapperStrategies;
-  // strategy -> async swapper
-  mapping(address => address) public override strategyAsyncSwapper;
   // strategy -> sync swapper
   mapping(address => address) public override strategySyncSwapper;
   // strategy -> permissions
@@ -117,22 +111,6 @@ abstract contract TradeFactorySwapperHandler is ITradeFactorySwapperHandler, Tra
     _swapperStrategies[_swapper].add(_strategy);
     // emit event
     emit SyncStrategySwapperSet(_strategy, _swapper);
-  }
-
-  function setStrategyAsyncSwapper(address _strategy, address _swapper) external override onlyRole(SWAPPER_SETTER) {
-    if (_strategy == address(0) || _swapper == address(0)) revert CommonErrors.ZeroAddress();
-    // we check that swapper being added is async
-    if (ISwapper(_swapper).SWAPPER_TYPE() != ISwapper.SwapperType.ASYNC) revert NotAsyncSwapper();
-    // we check that swapper is not already added
-    if (!_swappers.contains(_swapper)) revert InvalidSwapper();
-    // remove strategy from previous swapper if any
-    if (strategyAsyncSwapper[_strategy] != address(0)) _swapperStrategies[strategyAsyncSwapper[_strategy]].remove(_strategy);
-    // set new strategy's async swapper
-    strategyAsyncSwapper[_strategy] = _swapper;
-    // add strategy into new swapper
-    _swapperStrategies[_swapper].add(_strategy);
-    // emit event
-    emit AsyncStrategySwapperSet(_strategy, _swapper);
   }
 
   function addSwappers(address[] memory __swappers) external override onlyRole(SWAPPER_ADDER) {

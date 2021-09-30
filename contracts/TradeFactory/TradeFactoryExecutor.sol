@@ -53,7 +53,11 @@ interface ITradeFactoryExecutor {
     bytes calldata _data
   ) external returns (uint256 _receivedAmount);
 
-  function execute(uint256 _id, bytes calldata _data) external returns (uint256 _receivedAmount);
+  function execute(
+    uint256 _id,
+    address _swapper,
+    bytes calldata _data
+  ) external returns (uint256 _receivedAmount);
 
   function expire(uint256 _id) external returns (uint256 _freedAmount);
 }
@@ -92,20 +96,17 @@ abstract contract TradeFactoryExecutor is ITradeFactoryExecutor, TradeFactoryPos
   }
 
   // TradeFactoryExecutor
-  function execute(uint256 _id, bytes calldata _data) external override onlyMechanic returns (uint256 _receivedAmount) {
+  function execute(
+    uint256 _id,
+    address _swapper,
+    bytes calldata _data
+  ) external override onlyMechanic returns (uint256 _receivedAmount) {
     if (!_pendingTradesIds.contains(_id)) revert InvalidTrade();
     Trade storage _trade = pendingTradesById[_id];
     if (block.timestamp > _trade._deadline) revert ExpiredTrade();
-    if (!_swappers.contains(_trade._swapper)) revert InvalidSwapper();
-    IERC20(_trade._tokenIn).safeTransferFrom(_trade._strategy, _trade._swapper, _trade._amountIn);
-    _receivedAmount = ISwapper(_trade._swapper).swap(
-      _trade._strategy,
-      _trade._tokenIn,
-      _trade._tokenOut,
-      _trade._amountIn,
-      _trade._maxSlippage,
-      _data
-    );
+    if (!_swappers.contains(_swapper)) revert InvalidSwapper();
+    IERC20(_trade._tokenIn).safeTransferFrom(_trade._strategy, _swapper, _trade._amountIn);
+    _receivedAmount = ISwapper(_swapper).swap(_trade._strategy, _trade._tokenIn, _trade._tokenOut, _trade._amountIn, _trade._maxSlippage, _data);
     _removePendingTrade(_trade._strategy, _id);
     emit AsyncTradeExecuted(_id, _receivedAmount);
   }

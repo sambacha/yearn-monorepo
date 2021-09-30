@@ -98,7 +98,7 @@ abstract contract SwapperEnabled is ISwapperEnabled {
   // onlyStrategist or multisig:
   function _cancelPendingTrades(uint256[] calldata _tradesIds) internal {
     for (uint256 i; i < _tradesIds.length; i++) {
-      (, , , address _tokenIn, , uint256 _amountIn, , ) = ITradeFactoryPositionsHandler(tradeFactory).pendingTradesById(_tradesIds[i]);
+      (, , address _tokenIn, , uint256 _amountIn, , ) = ITradeFactoryPositionsHandler(tradeFactory).pendingTradesById(_tradesIds[i]);
       IERC20(_tokenIn).safeDecreaseAllowance(tradeFactory, _amountIn);
     }
     ITradeFactoryPositionsHandler(tradeFactory).cancelPendingTrades(_tradesIds);
