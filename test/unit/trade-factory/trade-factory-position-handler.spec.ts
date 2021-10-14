@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { evm, wallet } from '@test-utils';
 import { contract, given, then, when } from '@test-utils/bdd';
-import { abi as swapperABI } from '@artifacts/contracts/Swapper.sol/ISwapper.json';
+import { abi as swapperABI } from '@artifacts/contracts/swappers/Swapper.sol/ISwapper.json';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
 import { BigNumber, constants, utils, Wallet } from 'ethers';
 import Web3 from 'web3';
@@ -87,7 +87,6 @@ contract('TradeFactoryPositionsHandler', () => {
           tokenIn: wallet.generateRandomAddress(),
           tokenOut: wallet.generateRandomAddress(),
           amountIn: utils.parseEther('100'),
-          maxSlippage: 1000,
           deadline: moment().add('30', 'minutes').unix(),
         });
         tradeId = tx.id;
@@ -111,7 +110,6 @@ contract('TradeFactoryPositionsHandler', () => {
           tokenIn: wallet.generateRandomAddress(),
           tokenOut: wallet.generateRandomAddress(),
           amountIn: utils.parseEther('100'),
-          maxSlippage: 1000,
           deadline: moment().add('30', 'minutes').unix(),
         });
         tradeId = tx.id;
@@ -127,7 +125,6 @@ contract('TradeFactoryPositionsHandler', () => {
     const tokenIn = wallet.generateRandomAddress();
     const tokenOut = wallet.generateRandomAddress();
     const amountIn = utils.parseEther('100');
-    const maxSlippage = 1000;
     const deadline = moment().add('30', 'minutes').unix();
     given(async () => {
       swapper = await smock.fake<ISwapper>(swapperABI);
@@ -135,40 +132,29 @@ contract('TradeFactoryPositionsHandler', () => {
     });
     when('strategy is not registered', () => {
       then('tx is reverted with reason', async () => {
-        await expect(positionsHandler.connect(deployer).create(tokenIn, tokenOut, amountIn, maxSlippage, deadline)).to.be.revertedWith(
+        await expect(positionsHandler.connect(deployer).create(tokenIn, tokenOut, amountIn, deadline)).to.be.revertedWith(
           `AccessControl: account ${deployer.address.toLowerCase()} is missing role ${STRATEGY_ROLE.toLowerCase()}`
         );
       });
     });
     when('token in is zero address', () => {
       then('tx is reverted with reason', async () => {
-        await expect(positionsHandler.create(constants.AddressZero, tokenOut, amountIn, maxSlippage, deadline)).to.be.revertedWith(
-          'ZeroAddress()'
-        );
+        await expect(positionsHandler.create(constants.AddressZero, tokenOut, amountIn, deadline)).to.be.revertedWith('ZeroAddress()');
       });
     });
     when('token out is zero address', () => {
       then('tx is reverted with reason', async () => {
-        await expect(positionsHandler.create(tokenIn, constants.AddressZero, amountIn, maxSlippage, deadline)).to.be.revertedWith(
-          'ZeroAddress()'
-        );
+        await expect(positionsHandler.create(tokenIn, constants.AddressZero, amountIn, deadline)).to.be.revertedWith('ZeroAddress()');
       });
     });
     when('amount in is zero', () => {
       then('tx is reverted with reason', async () => {
-        await expect(positionsHandler.create(tokenIn, tokenOut, constants.Zero, maxSlippage, deadline)).to.be.revertedWith('ZeroAmount()');
-      });
-    });
-    when('max slippage is set to zero', () => {
-      then('tx is reverted with reason', async () => {
-        await expect(positionsHandler.create(tokenIn, tokenOut, amountIn, constants.Zero, deadline)).to.be.revertedWith('ZeroSlippage()');
+        await expect(positionsHandler.create(tokenIn, tokenOut, constants.Zero, deadline)).to.be.revertedWith('ZeroAmount()');
       });
     });
     when('deadline is equal or less than current timestamp', () => {
       then('tx is reverted with reason', async () => {
-        await expect(positionsHandler.create(tokenIn, tokenOut, amountIn, maxSlippage, constants.AddressZero)).to.be.revertedWith(
-          'InvalidDeadline()'
-        );
+        await expect(positionsHandler.create(tokenIn, tokenOut, amountIn, constants.AddressZero)).to.be.revertedWith('InvalidDeadline()');
       });
     });
     when('all data is correct', () => {
@@ -179,7 +165,6 @@ contract('TradeFactoryPositionsHandler', () => {
           tokenIn,
           tokenOut,
           amountIn,
-          maxSlippage,
           deadline,
         }));
       });
@@ -190,7 +175,6 @@ contract('TradeFactoryPositionsHandler', () => {
         expect(pendingTrade._tokenIn).to.equal(tokenIn);
         expect(pendingTrade._tokenOut).to.equal(tokenOut);
         expect(pendingTrade._amountIn).to.equal(amountIn);
-        expect(pendingTrade._maxSlippage).to.equal(maxSlippage);
         expect(pendingTrade._deadline).to.equal(deadline);
       });
       then('trade id gets added to pending trades by strategy', async () => {
@@ -200,12 +184,12 @@ contract('TradeFactoryPositionsHandler', () => {
         expect(await positionsHandler['pendingTradesIds()']()).to.eql([tradeId]);
       });
       then('trade counter gets increased', async () => {
-        expect(await positionsHandler.callStatic.create(tokenIn, tokenOut, amountIn, maxSlippage, deadline)).to.be.equal(tradeId.add(1));
+        expect(await positionsHandler.callStatic.create(tokenIn, tokenOut, amountIn, deadline)).to.be.equal(tradeId.add(1));
       });
       then('emits event', async () => {
         await expect(createTx)
           .to.emit(positionsHandler, 'TradeCreated')
-          .withArgs(tradeId, strategy.address, tokenIn, tokenOut, amountIn, maxSlippage, deadline);
+          .withArgs(tradeId, strategy.address, tokenIn, tokenOut, amountIn, deadline);
       });
     });
   });
@@ -216,7 +200,6 @@ contract('TradeFactoryPositionsHandler', () => {
         wallet.generateRandomAddress(),
         wallet.generateRandomAddress(),
         utils.parseEther('100'),
-        1000,
         moment().add('30', 'minutes').unix()
       );
     });
@@ -272,7 +255,6 @@ contract('TradeFactoryPositionsHandler', () => {
         tokenIn,
         tokenOut,
         amountIn: amountIn1,
-        maxSlippage,
         deadline,
       });
     });
@@ -292,13 +274,7 @@ contract('TradeFactoryPositionsHandler', () => {
         await positionsHandler.connect(strategyAdder).grantRole(STRATEGY_ROLE, randomStrategy.address);
         await positionsHandler
           .connect(randomStrategy)
-          .create(
-            wallet.generateRandomAddress(),
-            wallet.generateRandomAddress(),
-            utils.parseEther('100'),
-            1000,
-            moment().add('30', 'minutes').unix()
-          );
+          .create(wallet.generateRandomAddress(), wallet.generateRandomAddress(), utils.parseEther('100'), moment().add('30', 'minutes').unix());
       });
       then('tx is reverted with reason', async () => {
         await expect(positionsHandler.connect(tradesModifier).mergePendingTrades(1, [2])).to.be.revertedWith('InvalidTrade()');
@@ -311,14 +287,12 @@ contract('TradeFactoryPositionsHandler', () => {
           tokenIn,
           tokenOut,
           amountIn: amountIn2,
-          maxSlippage,
           deadline,
         });
         await create({
           tokenIn,
           tokenOut,
           amountIn: amountIn3,
-          maxSlippage,
           deadline,
         });
         mergeTx = await positionsHandler.connect(tradesModifier).mergePendingTrades(1, [2, 3]);
@@ -349,7 +323,6 @@ contract('TradeFactoryPositionsHandler', () => {
           tokenIn: wallet.generateRandomAddress(),
           tokenOut: wallet.generateRandomAddress(),
           amountIn: utils.parseEther('100'),
-          maxSlippage: 1000,
           deadline: moment().add('30', 'minutes').unix(),
         }));
         await positionsHandler.removePendingTrade(strategy.address, tradeId);
@@ -370,16 +343,14 @@ contract('TradeFactoryPositionsHandler', () => {
     tokenIn,
     tokenOut,
     amountIn,
-    maxSlippage,
     deadline,
   }: {
     tokenIn: string;
     tokenOut: string;
     amountIn: BigNumber;
-    maxSlippage: number;
     deadline: number;
   }): Promise<{ tx: TransactionResponse; id: BigNumber }> {
-    const tx = await positionsHandler.connect(strategy).create(tokenIn, tokenOut, amountIn, maxSlippage, deadline);
+    const tx = await positionsHandler.connect(strategy).create(tokenIn, tokenOut, amountIn, deadline);
     const txReceipt = await tx.wait();
     const parsedEvent = positionsHandler.interface.parseLog(txReceipt.logs[0]);
     return { tx, id: parsedEvent.args._id };

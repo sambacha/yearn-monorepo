@@ -35,8 +35,6 @@ contract('TradeFactory', () => {
 
   const offeredByOTC = utils.parseEther('59');
 
-  const maxSlippage = 10_000; // 1%
-
   before('create fixture loader', async () => {
     [
       masterAdmin,
@@ -89,15 +87,11 @@ contract('TradeFactory', () => {
 
     await tokenIn.connect(hodler).transfer(strategy.address, firstTradeAmountIn);
     await tokenIn.connect(strategy).approve(tradeFactory.address, firstTradeAmountIn);
-    await tradeFactory
-      .connect(strategy)
-      .create(tokenIn.address, tokenOut.address, firstTradeAmountIn, maxSlippage, moment().add('30', 'minutes').unix());
+    await tradeFactory.connect(strategy).create(tokenIn.address, tokenOut.address, firstTradeAmountIn, moment().add('30', 'minutes').unix());
 
     await tokenIn.connect(hodler).transfer(strategy2.address, secondTradeAmountIn);
     await tokenIn.connect(strategy2).approve(tradeFactory.address, secondTradeAmountIn);
-    await tradeFactory
-      .connect(strategy2)
-      .create(tokenIn.address, tokenOut.address, secondTradeAmountIn, maxSlippage, moment().add('30', 'minutes').unix());
+    await tradeFactory.connect(strategy2).create(tokenIn.address, tokenOut.address, secondTradeAmountIn, moment().add('30', 'minutes').unix());
 
     await tokenOut.connect(hodler).transfer(otcPoolGovernor.address, offeredByOTC);
     await tokenOut.connect(otcPoolGovernor).approve(otcPool.address, offeredByOTC);

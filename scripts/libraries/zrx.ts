@@ -2,6 +2,11 @@ import { BigNumber } from '@ethersproject/bignumber';
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import qs from 'qs';
+import _ from 'lodash';
+import { ethers } from 'hardhat';
+import { IERC20Metadata } from '@typechained';
+import { abi as IERC20MetadataABI } from '@artifacts/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol/IERC20Metadata.json';
+import { constants, utils } from 'ethers';
 
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
@@ -16,7 +21,7 @@ export type QuoteRequest = {
   buyToken: string;
   sellAmount?: BigNumber | string;
   buyAmount?: BigNumber | string;
-  sippagePercentage?: number;
+  slippagePercentage?: number;
   gasPrice?: BigNumber | string;
   takerAddress?: string;
   excludeSources?: string[] | string;
@@ -48,6 +53,7 @@ export type QuoteResponse = {
   allowanceTarget: string;
   sellTokenToEthRate: string;
   buyTokenToEthRate: string;
+  minAmountOut?: BigNumber;
 };
 
 export const quote = async (quoteRequest: QuoteRequest): Promise<QuoteResponse> => {
@@ -61,13 +67,24 @@ export const quote = async (quoteRequest: QuoteRequest): Promise<QuoteResponse> 
   quoteRequest.excludeSources = quoteRequest.excludeSources.join(',');
 
   let response: any;
+  let data: QuoteResponse;
   try {
     response = await axios.get(`https://${API_URL[quoteRequest.chainId]}/swap/v1/quote?${qs.stringify(quoteRequest)}`);
+    data = response.data as QuoteResponse;
+    // Fix for slippage not working as expected
+    if (quoteRequest.hasOwnProperty('slippagePercentage')) {
+      const tokenFrom = (await ethers.getContractAt(IERC20MetadataABI, quoteRequest.sellToken)) as IERC20Metadata;
+      const tokenFromDecimals = await tokenFrom.decimals();
+      const tokenTo = (await ethers.getContractAt(IERC20MetadataABI, quoteRequest.buyToken)) as IERC20Metadata;
+      const tokenToDecimals = await tokenTo.decimals();
+      const rateFromTo = utils.parseUnits(data.guaranteedPrice, tokenToDecimals);
+      data.minAmountOut = BigNumber.from(`${data.sellAmount}`).mul(rateFromTo).div(BigNumber.from(10).pow(tokenFromDecimals));
+    }
   } catch (err: any) {
     console.log(err.response.data);
     throw new Error(`Error code: ${err.response.data.code}. Reason: ${err.response.data.reason}`);
   }
-  return response.data as QuoteResponse;
+  return data;
 };
 
 export default {

@@ -15,11 +15,13 @@ export type SwapParams = {
   uniswapV2Router: string;
   uniswapV2Factory: string;
   hopTokensToTest?: string[];
+  slippage?: number;
 };
 
 export type SwapResponse = {
   data: string;
   amountOut: BigNumber;
+  minAmountOut?: BigNumber;
   path: string[];
 };
 
@@ -51,11 +53,17 @@ export const getBestPathEncoded = async (swapParams: SwapParams): Promise<SwapRe
       }
     }
   }
-  return {
+  const response: SwapResponse = {
     data: ethers.utils.defaultAbiCoder.encode(['address[]'], [maxPath]),
     amountOut: maxOut,
     path: maxPath,
   };
+
+  if (swapParams.hasOwnProperty('slippage')) {
+    response.minAmountOut = maxOut.sub(maxOut.mul(swapParams.slippage!).div(100));
+  }
+
+  return response;
 };
 
 export default {

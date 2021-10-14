@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../Swapper.sol';
+import './AsyncSwapper.sol';
 
 interface IAggregationExecutor {
   function callBytes(bytes calldata data) external payable;
@@ -56,18 +56,15 @@ interface IOneInchExchange {
   ) external payable returns (uint256 returnAmount, uint256 gasLeft);
 }
 
-interface IOneInchAggregatorSwapper is ISwapper {
+interface IOneInchAggregatorSwapper is IAsyncSwapper {
   // solhint-disable-next-line func-name-mixedcase
   function AGGREGATION_ROUTER_V3() external view returns (address);
 }
 
-contract OneInchAggregatorSwapper is IOneInchAggregatorSwapper, Swapper {
+contract OneInchAggregatorSwapper is IOneInchAggregatorSwapper, AsyncSwapper {
   using SafeERC20 for IERC20;
 
   uint256 private constant _SHOULD_CLAIM_FLAG = 0x04;
-
-  // solhint-disable-next-line var-name-mixedcase
-  SwapperType public constant override SWAPPER_TYPE = SwapperType.ASYNC;
 
   // solhint-disable-next-line var-name-mixedcase
   address public immutable override AGGREGATION_ROUTER_V3;
@@ -76,7 +73,7 @@ contract OneInchAggregatorSwapper is IOneInchAggregatorSwapper, Swapper {
     address _governor,
     address _tradeFactory,
     address _aggregationRouter
-  ) Swapper(_governor, _tradeFactory) {
+  ) AsyncSwapper(_governor, _tradeFactory) {
     AGGREGATION_ROUTER_V3 = _aggregationRouter;
   }
 
@@ -85,7 +82,6 @@ contract OneInchAggregatorSwapper is IOneInchAggregatorSwapper, Swapper {
     address _tokenIn,
     address _tokenOut,
     uint256 _amountIn,
-    uint256, // Max slippage is used off-chain
     bytes calldata _data
   ) internal override returns (uint256 _receivedAmount) {
     (IAggregationExecutor _caller, IOneInchExchange.SwapDescription memory _swapDescription, bytes memory _tradeData) = abi.decode(

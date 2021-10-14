@@ -3,7 +3,6 @@ pragma solidity >=0.8.4 <0.9.0;
 
 import '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import './TradeFactorySwapperHandler.sol';
-import '../Swapper.sol';
 
 interface ITradeFactoryPositionsHandler {
   struct Trade {
@@ -12,19 +11,10 @@ interface ITradeFactoryPositionsHandler {
     address _tokenIn;
     address _tokenOut;
     uint256 _amountIn;
-    uint256 _maxSlippage;
     uint256 _deadline;
   }
 
-  event TradeCreated(
-    uint256 indexed _id,
-    address _strategy,
-    address _tokenIn,
-    address _tokenOut,
-    uint256 _amountIn,
-    uint256 _maxSlippage,
-    uint256 _deadline
-  );
+  event TradeCreated(uint256 indexed _id, address _strategy, address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _deadline);
 
   event TradesCanceled(address indexed _strategy, uint256[] _ids);
 
@@ -45,7 +35,6 @@ interface ITradeFactoryPositionsHandler {
       address _tokenIn,
       address _tokenOut,
       uint256 _amountIn,
-      uint256 _maxSlippage,
       uint256 _deadline
     );
 
@@ -57,7 +46,6 @@ interface ITradeFactoryPositionsHandler {
     address _tokenIn,
     address _tokenOut,
     uint256 _amountIn,
-    uint256 _maxSlippage,
     uint256 _deadline
   ) external returns (uint256 _id);
 
@@ -103,20 +91,18 @@ abstract contract TradeFactoryPositionsHandler is ITradeFactoryPositionsHandler,
     address _tokenIn,
     address _tokenOut,
     uint256 _amountIn,
-    uint256 _maxSlippage,
     uint256 _deadline
   ) external override onlyRole(STRATEGY) returns (uint256 _id) {
     if (_tokenIn == address(0) || _tokenOut == address(0)) revert CommonErrors.ZeroAddress();
     if (_amountIn == 0) revert CommonErrors.ZeroAmount();
-    if (_maxSlippage == 0) revert CommonErrors.ZeroSlippage();
     if (_deadline <= block.timestamp) revert InvalidDeadline();
     _id = _tradeCounter;
-    Trade memory _trade = Trade(_tradeCounter, msg.sender, _tokenIn, _tokenOut, _amountIn, _maxSlippage, _deadline);
+    Trade memory _trade = Trade(_tradeCounter, msg.sender, _tokenIn, _tokenOut, _amountIn, _deadline);
     pendingTradesById[_trade._id] = _trade;
     _pendingTradesByOwner[msg.sender].add(_trade._id);
     _pendingTradesIds.add(_trade._id);
     _tradeCounter += 1;
-    emit TradeCreated(_trade._id, _trade._strategy, _trade._tokenIn, _trade._tokenOut, _trade._amountIn, _trade._maxSlippage, _trade._deadline);
+    emit TradeCreated(_trade._id, _trade._strategy, _trade._tokenIn, _trade._tokenOut, _trade._amountIn, _trade._deadline);
   }
 
   function cancelPendingTrades(uint256[] calldata _ids) external override onlyRole(STRATEGY) {

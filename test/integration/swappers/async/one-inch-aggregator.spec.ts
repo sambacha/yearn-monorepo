@@ -17,7 +17,6 @@ describe('OneInchAggregator', function () {
 
   let snapshotId: string;
 
-  const MAX_SLIPPAGE = 10_000; // 1%
   const GAS_LIMIT = 1_000_000;
 
   context('on mainnet', () => {
@@ -71,7 +70,6 @@ describe('OneInchAggregator', function () {
         toTokenAddress: DAI_ADDRESS,
         fromTokenWhaleAddress: CRV_WHALE_ADDRESS,
         amountIn: AMOUNT_IN,
-        maxSlippage: MAX_SLIPPAGE,
         strategy,
       }));
 
@@ -84,9 +82,11 @@ describe('OneInchAggregator', function () {
 
     describe('swap', () => {
       beforeEach(async () => {
-        await tradeFactory.connect(yMech)['execute(uint256,address,bytes)'](1, swapper.address, oneInchApiResponse.tx.data, {
-          gasLimit: GAS_LIMIT + GAS_LIMIT * 0.25,
-        });
+        await tradeFactory
+          .connect(yMech)
+          ['execute(uint256,address,uint256,bytes)'](1, swapper.address, oneInchApiResponse.minAmountOut!, oneInchApiResponse.tx.data, {
+            gasLimit: GAS_LIMIT + GAS_LIMIT * 0.25,
+          });
       });
 
       then('CRV gets taken from strategy', async () => {
@@ -149,7 +149,6 @@ describe('OneInchAggregator', function () {
         toTokenAddress: DAI_ADDRESS,
         fromTokenWhaleAddress: WMATIC_WHALE_ADDRESS,
         amountIn: AMOUNT_IN,
-        maxSlippage: MAX_SLIPPAGE,
         strategy,
       }));
 
@@ -162,9 +161,11 @@ describe('OneInchAggregator', function () {
 
     describe('swap', () => {
       beforeEach(async () => {
-        await tradeFactory.connect(yMech)['execute(uint256,address,bytes)'](1, swapper.address, oneInchApiResponse.tx.data, {
-          gasLimit: GAS_LIMIT + GAS_LIMIT * 0.25,
-        });
+        await tradeFactory
+          .connect(yMech)
+          ['execute(uint256,address,uint256,bytes)'](1, swapper.address, oneInchApiResponse.minAmountOut!, oneInchApiResponse.tx.data, {
+            gasLimit: GAS_LIMIT + GAS_LIMIT * 0.25,
+          });
       });
 
       then('WMATIC gets taken from strategy and DAI gets airdropped to strategy', async () => {

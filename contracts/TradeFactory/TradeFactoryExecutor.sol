@@ -8,6 +8,9 @@ import '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 import '@lbertenasco/contract-utils/contracts/utils/Machinery.sol';
 
+import '../swappers/async/AsyncSwapper.sol';
+import '../swappers/sync/SyncSwapper.sol';
+
 import '../OTCPool.sol';
 
 import './TradeFactoryPositionsHandler.sol';
@@ -56,10 +59,20 @@ interface ITradeFactoryExecutor {
   function execute(
     uint256 _id,
     address _swapper,
+    uint256 _minAmountOut,
     bytes calldata _data
   ) external returns (uint256 _receivedAmount);
 
   function expire(uint256 _id) external returns (uint256 _freedAmount);
+
+  function execute(uint256[] calldata _ids, uint256 _rateTokenInToOut) external;
+
+  function execute(
+    uint256 _firstTradeId,
+    uint256 _secondTradeId,
+    uint256 _consumedFirstTrade,
+    uint256 _consumedSecondTrade
+  ) external;
 }
 
 abstract contract TradeFactoryExecutor is ITradeFactoryExecutor, TradeFactoryPositionsHandler, Machinery {
@@ -91,7 +104,7 @@ abstract contract TradeFactoryExecutor is ITradeFactoryExecutor, TradeFactoryPos
     if (_amountIn == 0) revert CommonErrors.ZeroAmount();
     if (_maxSlippage == 0) revert CommonErrors.ZeroSlippage();
     IERC20(_tokenIn).safeTransferFrom(msg.sender, _swapper, _amountIn);
-    _receivedAmount = ISwapper(_swapper).swap(msg.sender, _tokenIn, _tokenOut, _amountIn, _maxSlippage, _data);
+    _receivedAmount = ISyncSwapper(_swapper).swap(msg.sender, _tokenIn, _tokenOut, _amountIn, _maxSlippage, _data);
     emit SyncTradeExecuted(msg.sender, _swapper, _tokenIn, _tokenOut, _amountIn, _maxSlippage, _data, _receivedAmount);
   }
 
@@ -99,6 +112,7 @@ abstract contract TradeFactoryExecutor is ITradeFactoryExecutor, TradeFactoryPos
   function execute(
     uint256 _id,
     address _swapper,
+    uint256 _minAmountOut,
     bytes calldata _data
   ) external override onlyMechanic returns (uint256 _receivedAmount) {
     if (!_pendingTradesIds.contains(_id)) revert InvalidTrade();
@@ -106,7 +120,7 @@ abstract contract TradeFactoryExecutor is ITradeFactoryExecutor, TradeFactoryPos
     if (block.timestamp > _trade._deadline) revert ExpiredTrade();
     if (!_swappers.contains(_swapper)) revert InvalidSwapper();
     IERC20(_trade._tokenIn).safeTransferFrom(_trade._strategy, _swapper, _trade._amountIn);
-    _receivedAmount = ISwapper(_swapper).swap(_trade._strategy, _trade._tokenIn, _trade._tokenOut, _trade._amountIn, _trade._maxSlippage, _data);
+    _receivedAmount = IAsyncSwapper(_swapper).swap(_trade._strategy, _trade._tokenIn, _trade._tokenOut, _trade._amountIn, _minAmountOut, _data);
     _removePendingTrade(_trade._strategy, _id);
     emit AsyncTradeExecuted(_id, _receivedAmount);
   }
@@ -125,7 +139,7 @@ abstract contract TradeFactoryExecutor is ITradeFactoryExecutor, TradeFactoryPos
     emit AsyncTradeExpired(_id);
   }
 
-  function execute(uint256[] calldata _ids, uint256 _rateTokenInToOut) external onlyMechanic {
+  function execute(uint256[] calldata _ids, uint256 _rateTokenInToOut) external override onlyMechanic {
     if (_rateTokenInToOut == 0) revert ZeroRate();
     address _tokenIn = pendingTradesById[_ids[0]]._tokenIn;
     address _tokenOut = pendingTradesById[_ids[0]]._tokenOut;
@@ -148,7 +162,7 @@ abstract contract TradeFactoryExecutor is ITradeFactoryExecutor, TradeFactoryPos
     uint256 _secondTradeId,
     uint256 _consumedFirstTrade,
     uint256 _consumedSecondTrade
-  ) external onlyRole(TRADES_SETTLER) returns (uint256 _receivedAmountAnchorTrade, uint256 _receivedAmountAgainstTrade) {
+  ) external override onlyRole(TRADES_SETTLER) {
     Trade storage _firstTrade = pendingTradesById[_firstTradeId];
     Trade storage _secondTrade = pendingTradesById[_secondTradeId];
     if (_firstTrade._tokenIn != _secondTrade._tokenOut || _firstTrade._tokenOut != _secondTrade._tokenIn) revert InvalidTrade();

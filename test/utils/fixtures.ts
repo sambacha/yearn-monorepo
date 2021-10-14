@@ -7,6 +7,7 @@ import {
   bytecode as MACHINERY_BYTECODE,
 } from '@lbertenasco/contract-utils/artifacts/contracts/utils/Machinery.sol/Machinery.json';
 import { uniswap, wallet } from '@test-utils';
+import { TradeFactory, TradeFactory__factory } from '@typechained';
 import { deployContract } from 'ethereum-waffle';
 import { Contract, utils } from 'ethers';
 import { ethers } from 'hardhat';
@@ -32,7 +33,7 @@ export const machineryFixture = async (mechanic: string): Promise<MachineryFixtu
 };
 
 interface TradeFactoryFixture {
-  tradeFactory: Contract;
+  tradeFactory: TradeFactory;
 }
 
 export const tradeFactoryFixture = async (
@@ -44,7 +45,7 @@ export const tradeFactoryFixture = async (
   tradeSettler: string,
   mechanicsRegistry: string
 ): Promise<TradeFactoryFixture> => {
-  const tradeFactoryFactory = await ethers.getContractFactory('contracts/TradeFactory/TradeFactory.sol:TradeFactory');
+  const tradeFactoryFactory = (await ethers.getContractFactory('contracts/TradeFactory/TradeFactory.sol:TradeFactory')) as TradeFactory__factory;
   const tradeFactory = await tradeFactoryFactory.deploy(
     masterAdmin,
     swapperAdder,

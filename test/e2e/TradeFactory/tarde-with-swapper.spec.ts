@@ -7,8 +7,9 @@ import { contracts, erc20, evm, fixtures, uniswap } from '@test-utils';
 import { contract, given, then, when } from '@test-utils/bdd';
 import { expect } from 'chai';
 import uniswapLibrary from '../../../scripts/libraries/uniswap-v2';
+import { IERC20, TradeFactory } from '@typechained';
 
-contract.only('TradeFactory', () => {
+contract('TradeFactory', () => {
   let masterAdmin: SignerWithAddress;
   let mechanic: SignerWithAddress;
   let strategy: SignerWithAddress;
@@ -20,12 +21,12 @@ contract.only('TradeFactory', () => {
   let tradeSettler: SignerWithAddress;
   let otcPoolGovernor: SignerWithAddress;
 
-  let tokenIn: Contract;
-  let tokenOut: Contract;
+  let tokenIn: IERC20;
+  let tokenOut: IERC20;
 
   let mechanicsRegistry: Contract;
   let machinery: Contract;
-  let tradeFactory: Contract;
+  let tradeFactory: TradeFactory;
 
   let uniswapV2Factory: Contract;
   let uniswapV2Router02: Contract;
@@ -131,9 +132,7 @@ contract.only('TradeFactory', () => {
   describe('async trade executed', () => {
     let minAmountOut: BigNumber;
     given(async () => {
-      await tradeFactory
-        .connect(strategy)
-        .create(tokenIn.address, tokenOut.address, amountIn, maxSlippage, moment().add('30', 'minutes').unix());
+      await tradeFactory.connect(strategy).create(tokenIn.address, tokenOut.address, amountIn, moment().add('30', 'minutes').unix());
       const bestPath = await uniswapLibrary.getBestPathEncoded({
         tokenIn: tokenIn.address,
         tokenOut: tokenOut.address,
@@ -142,8 +141,10 @@ contract.only('TradeFactory', () => {
         uniswapV2Router: uniswapV2Router02.address,
       });
       // We can do this since ratio is 1 = 1
-      minAmountOut = amountIn.sub(amountIn.mul(maxSlippage).div(10000 / 100));
-      await tradeFactory.connect(mechanic)['execute(uint256,address,bytes)'](1, uniswapV2AsyncSwapper.address, bestPath.data);
+      minAmountOut = bestPath.amountOut.sub(bestPath.amountOut.mul(maxSlippage).div(10000).div(100));
+      await tradeFactory
+        .connect(mechanic)
+        ['execute(uint256,address,uint256,bytes)'](1, uniswapV2AsyncSwapper.address, minAmountOut, bestPath.data);
     });
     then('tokens in gets taken from strategy', async () => {
       expect(await tokenIn.balanceOf(strategy.address)).to.equal(0);

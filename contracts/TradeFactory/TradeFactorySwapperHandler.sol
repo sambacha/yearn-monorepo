@@ -4,7 +4,7 @@ pragma solidity >=0.8.4 <0.9.0;
 import '@openzeppelin/contracts/access/AccessControl.sol';
 import '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-import '../Swapper.sol';
+import '../swappers/Swapper.sol';
 
 import './TradeFactoryAccessManager.sol';
 

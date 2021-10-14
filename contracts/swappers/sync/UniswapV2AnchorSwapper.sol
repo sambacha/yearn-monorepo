@@ -5,9 +5,9 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/math/Math.sol';
-import '../../Swapper.sol';
+import './SyncSwapper.sol';
 
-interface IUniswapV2AnchorSwapper is ISwapper {
+interface IUniswapV2AnchorSwapper is ISyncSwapper {
   // solhint-disable-next-line func-name-mixedcase
   function WANCHOR() external view returns (address);
 
@@ -21,11 +21,8 @@ interface IUniswapV2AnchorSwapper is ISwapper {
   function ROUTER() external view returns (address);
 }
 
-contract UniswapV2AnchorSwapper is IUniswapV2AnchorSwapper, Swapper {
+contract UniswapV2AnchorSwapper is IUniswapV2AnchorSwapper, SyncSwapper {
   using SafeERC20 for IERC20;
-
-  // solhint-disable-next-line var-name-mixedcase
-  SwapperType public constant override SWAPPER_TYPE = SwapperType.SYNC;
 
   // solhint-disable-next-line var-name-mixedcase
   address public immutable override WETH;
@@ -43,7 +40,7 @@ contract UniswapV2AnchorSwapper is IUniswapV2AnchorSwapper, Swapper {
     address _wanchor,
     address _factory,
     address _router
-  ) Swapper(_governor, _tradeFactory) {
+  ) SyncSwapper(_governor, _tradeFactory) {
     WETH = _weth;
     WANCHOR = _wanchor;
     FACTORY = _factory;

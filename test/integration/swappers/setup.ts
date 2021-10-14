@@ -66,15 +66,11 @@ const integrationSwapperSetup = async ({
   return { fromToken, toToken, yMech, tradeFactory, swapper: deployedSwapper };
 };
 
-type SetupAsyncParams = SetupParams & {
-  maxSlippage: number;
-};
-
-export const async = async (setup: SetupAsyncParams): Promise<SetupResponse> => {
+export const async = async (setup: SetupParams): Promise<SetupResponse> => {
   const response = await integrationSwapperSetup(setup);
   await response.tradeFactory
     .connect(setup.strategy)
-    .create(setup.fromTokenAddress, setup.toTokenAddress, setup.amountIn, setup.maxSlippage, moment().add('30', 'minutes').unix());
+    .create(setup.fromTokenAddress, setup.toTokenAddress, setup.amountIn, moment().add('30', 'minutes').unix());
   return response;
 };
 

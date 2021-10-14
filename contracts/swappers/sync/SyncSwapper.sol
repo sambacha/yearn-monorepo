@@ -1,20 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '../Swapper.sol';
 
-import '@lbertenasco/contract-utils/contracts/utils/Governable.sol';
-import '@lbertenasco/contract-utils/contracts/utils/CollectableDust.sol';
-
-import './libraries/CommonErrors.sol';
-
-interface ISwapper {
-  enum SwapperType {
-    ASYNC,
-    SYNC
-  }
-
+interface ISyncSwapper is ISwapper {
   event Swapped(
     address _receiver,
     address _tokenIn,
@@ -28,12 +17,6 @@ interface ISwapper {
   // solhint-disable-next-line func-name-mixedcase
   function SLIPPAGE_PRECISION() external view returns (uint256);
 
-  // solhint-disable-next-line func-name-mixedcase
-  function TRADE_FACTORY() external view returns (address);
-
-  // solhint-disable-next-line func-name-mixedcase
-  function SWAPPER_TYPE() external view returns (SwapperType);
-
   function swap(
     address _receiver,
     address _tokenIn,
@@ -44,24 +27,14 @@ interface ISwapper {
   ) external returns (uint256 _receivedAmount);
 }
 
-abstract contract Swapper is ISwapper, Governable, CollectableDust {
-  using SafeERC20 for IERC20;
-
+abstract contract SyncSwapper is ISyncSwapper, Swapper {
   // solhint-disable-next-line var-name-mixedcase
   uint256 public immutable override SLIPPAGE_PRECISION = 10000; // 1 is 0.0001%, 1_000 is 0.1%
 
   // solhint-disable-next-line var-name-mixedcase
-  address public immutable override TRADE_FACTORY;
+  SwapperType public constant override SWAPPER_TYPE = SwapperType.SYNC;
 
-  constructor(address _governor, address _tradeFactory) Governable(_governor) {
-    if (_tradeFactory == address(0)) revert CommonErrors.ZeroAddress();
-    TRADE_FACTORY = _tradeFactory;
-  }
-
-  modifier onlyTradeFactory() {
-    if (msg.sender != TRADE_FACTORY) revert CommonErrors.NotAuthorized();
-    _;
-  }
+  constructor(address _governor, address _tradeFactory) Governable(_governor) Swapper(_tradeFactory) {}
 
   function _assertPreSwap(
     address _receiver,
@@ -95,13 +68,5 @@ abstract contract Swapper is ISwapper, Governable, CollectableDust {
     _assertPreSwap(_receiver, _tokenIn, _tokenOut, _amountIn, _maxSlippage);
     _receivedAmount = _executeSwap(_receiver, _tokenIn, _tokenOut, _amountIn, _maxSlippage, _data);
     emit Swapped(_receiver, _tokenIn, _tokenOut, _amountIn, _maxSlippage, _receivedAmount, _data);
-  }
-
-  function sendDust(
-    address _to,
-    address _token,
-    uint256 _amount
-  ) external virtual override onlyGovernor {
-    _sendDust(_to, _token, _amount);
   }
 }

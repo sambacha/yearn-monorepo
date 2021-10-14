@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4 <0.9.0;
 
-import '../../Swapper.sol';
+import './AsyncSwapper.sol';
 
-interface IZRXSwapper is ISwapper {
+interface IZRXSwapper is IAsyncSwapper {
   error TradeReverted();
 
   // solhint-disable-next-line func-name-mixedcase
   function ZRX() external view returns (address);
 }
 
-contract ZRXSwapper is IZRXSwapper, Swapper {
+contract ZRXSwapper is IZRXSwapper, AsyncSwapper {
   using SafeERC20 for IERC20;
-
-  // solhint-disable-next-line var-name-mixedcase
-  SwapperType public constant override SWAPPER_TYPE = SwapperType.ASYNC;
 
   // solhint-disable-next-line var-name-mixedcase
   address public immutable override ZRX;
@@ -24,7 +21,7 @@ contract ZRXSwapper is IZRXSwapper, Swapper {
     address _tradeFactory,
     // solhint-disable-next-line var-name-mixedcase
     address _ZRX
-  ) Swapper(_governor, _tradeFactory) {
+  ) AsyncSwapper(_governor, _tradeFactory) {
     ZRX = _ZRX;
   }
 
@@ -33,7 +30,6 @@ contract ZRXSwapper is IZRXSwapper, Swapper {
     address _tokenIn,
     address _tokenOut,
     uint256 _amountIn,
-    uint256, // Max slippage is used off-chain
     bytes calldata _data
   ) internal override returns (uint256 _receivedAmount) {
     uint256 _initialBalanceTokenIn = IERC20(_tokenIn).balanceOf(address(this));

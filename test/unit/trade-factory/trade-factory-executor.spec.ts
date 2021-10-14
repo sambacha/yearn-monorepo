@@ -2,7 +2,8 @@ import { Contract } from '@ethersproject/contracts';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 import { abi as machineryABI } from '@lbertenasco/contract-utils/artifacts/interfaces/utils/IMachinery.sol/IMachinery.json';
 import { abi as IERC20ABI } from '@artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json';
-import { abi as swapperABI } from '@artifacts/contracts/Swapper.sol/ISwapper.json';
+import { abi as asyncSwapperABI } from '@artifacts/contracts/swappers/async/AsyncSwapper.sol/IAsyncSwapper.json';
+import { abi as syncSwapperABI } from '@artifacts/contracts/swappers/sync/SyncSwapper.sol/ISyncSwapper.json';
 import { abi as otcPoolABI } from '@artifacts/contracts/OTCPool.sol/IOTCPool.json';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
 import chai, { expect } from 'chai';
@@ -11,7 +12,16 @@ import { contract, given, then, when } from '@test-utils/bdd';
 import { evm, wallet, contracts, erc20 } from '@test-utils';
 import { BigNumber, constants, utils, Wallet } from 'ethers';
 import { FakeContract, MockContract, MockContractFactory, smock } from '@defi-wonderland/smock';
-import { IERC20, Machinery, OTCPool, Swapper, TradeFactoryExecutorMock, TradeFactoryExecutorMock__factory } from '@typechained';
+import {
+  AsyncSwapper,
+  IERC20,
+  Machinery,
+  OTCPool,
+  Swapper,
+  SyncSwapper,
+  TradeFactoryExecutorMock,
+  TradeFactoryExecutorMock__factory,
+} from '@typechained';
 import moment from 'moment';
 import { TokenContract } from '@test-utils/erc20';
 
@@ -27,8 +37,8 @@ contract('TradeFactoryExecutor', () => {
   let tradeSettler: SignerWithAddress;
   let mechanic: SignerWithAddress;
   let machinery: FakeContract<Machinery>;
-  let asyncSwapper: FakeContract<Swapper>;
-  let syncSwapper: FakeContract<Swapper>;
+  let asyncSwapper: FakeContract<AsyncSwapper>;
+  let syncSwapper: FakeContract<SyncSwapper>;
   let otcPool: FakeContract<OTCPool>;
   let executorFactory: MockContractFactory<TradeFactoryExecutorMock__factory>;
   let executor: MockContract<TradeFactoryExecutorMock>;
@@ -42,8 +52,8 @@ contract('TradeFactoryExecutor', () => {
       mechanic
     );
     machinery = await smock.fake<Machinery>(machineryABI);
-    asyncSwapper = await smock.fake<Swapper>(swapperABI);
-    syncSwapper = await smock.fake<Swapper>(swapperABI);
+    asyncSwapper = await smock.fake<AsyncSwapper>(asyncSwapperABI);
+    syncSwapper = await smock.fake<SyncSwapper>(syncSwapperABI);
     otcPool = await smock.fake<OTCPool>(otcPoolABI);
     executor = await executorFactory.deploy(
       masterAdmin.address,
@@ -155,23 +165,22 @@ contract('TradeFactoryExecutor', () => {
     const amountIn = utils.parseEther('100');
     const deadline = moment().add('30', 'minutes').unix();
     const tokenOut = wallet.generateRandomAddress();
-    const maxSlippage = BigNumber.from('1000');
+    const minAmountOut = BigNumber.from('1000');
     const data = contracts.encodeParameters([], []);
     given(async () => {
       ({ id: tradeId } = await create({
         tokenIn: token.address,
         tokenOut,
         amountIn,
-        maxSlippage,
         deadline,
       }));
     });
     // TODO: Only mechanic
     when('executing a trade thats not pending', () => {
       then('tx is reverted with reason', async () => {
-        await expect(executor['execute(uint256,address,bytes)'](tradeId.add(1), asyncSwapper.address, data)).to.be.revertedWith(
-          'InvalidTrade()'
-        );
+        await expect(
+          executor['execute(uint256,address,uint256,bytes)'](tradeId.add(1), asyncSwapper.address, minAmountOut, data)
+        ).to.be.revertedWith('InvalidTrade()');
       });
     });
     when('trade has expired', () => {
@@ -179,7 +188,9 @@ contract('TradeFactoryExecutor', () => {
         await evm.advanceToTimeAndBlock(deadline + 1);
       });
       then('tx is reverted with reason', async () => {
-        await expect(executor['execute(uint256,address,bytes)'](tradeId, asyncSwapper.address, data)).to.be.revertedWith('ExpiredTrade()');
+        await expect(executor['execute(uint256,address,uint256,bytes)'](tradeId, asyncSwapper.address, minAmountOut, data)).to.be.revertedWith(
+          'ExpiredTrade()'
+        );
       });
     });
     when('executing a trade where swapper has been removed', () => {
@@ -187,7 +198,9 @@ contract('TradeFactoryExecutor', () => {
         await executor.connect(swapperAdder).removeSwappers([asyncSwapper.address]);
       });
       then('tx is reverted with reason', async () => {
-        await expect(executor['execute(uint256,address,bytes)'](tradeId, asyncSwapper.address, data)).to.be.revertedWith('InvalidSwapper()');
+        await expect(executor['execute(uint256,address,uint256,bytes)'](tradeId, asyncSwapper.address, minAmountOut, data)).to.be.revertedWith(
+          'InvalidSwapper()'
+        );
       });
     });
     when('is not the first trade being executed of token in & swapper', () => {
@@ -199,7 +212,7 @@ contract('TradeFactoryExecutor', () => {
         asyncSwapper.swap.returns(receivedAmount);
         initialStrategyBalance = await token.balanceOf(strategy.address);
         initialSwapperBalance = await token.balanceOf(asyncSwapper.address);
-        executeTx = await executor['execute(uint256,address,bytes)'](tradeId, asyncSwapper.address, data);
+        executeTx = await executor['execute(uint256,address,uint256,bytes)'](tradeId, asyncSwapper.address, minAmountOut, data);
       });
       then('approve from strategy to trade factory gets reduced', async () => {
         expect(await token.allowance(strategy.address, asyncSwapper.address)).to.be.equal(0);
@@ -211,7 +224,7 @@ contract('TradeFactoryExecutor', () => {
         expect(await token.balanceOf(asyncSwapper.address)).to.equal(initialSwapperBalance.add(amountIn));
       });
       then('calls swapper swap with correct data', () => {
-        expect(asyncSwapper.swap).to.have.been.calledWith(strategy.address, token.address, tokenOut, amountIn, maxSlippage, data);
+        expect(asyncSwapper.swap).to.have.been.calledWith(strategy.address, token.address, tokenOut, amountIn, minAmountOut, data);
       });
       then('removes trades from trades', async () => {
         expect(await executor.pendingTradesById(tradeId))
@@ -238,7 +251,6 @@ contract('TradeFactoryExecutor', () => {
         tokenIn: token.address,
         tokenOut: wallet.generateRandomAddress(),
         amountIn,
-        maxSlippage: 1000,
         deadline: moment().add('30', 'minutes').unix(),
       }));
     });
@@ -301,31 +313,23 @@ contract('TradeFactoryExecutor', () => {
         tokenIn: token.address,
         tokenOut: tokenOut.address,
         deadline: moment().add('30', 'minutes').unix(),
-        maxSlippage: BigNumber.from('1000'),
       };
       secondTrade = {
         amountIn: utils.parseEther('100'),
         tokenIn: tokenOut.address,
         tokenOut: token.address,
         deadline: moment().add('30', 'minutes').unix(),
-        maxSlippage: BigNumber.from('1000'),
       };
       // ID: 1
       await token.connect(strategy).approve(executor.address, firstTrade.amountIn);
-      await executor
-        .connect(strategy)
-        .create(firstTrade.tokenIn, firstTrade.tokenOut, firstTrade.amountIn, firstTrade.maxSlippage, firstTrade.deadline);
+      await executor.connect(strategy).create(firstTrade.tokenIn, firstTrade.tokenOut, firstTrade.amountIn, firstTrade.deadline);
       // ID: 2
       await tokenOut.connect(otherStrat).approve(executor.address, secondTrade.amountIn);
-      await executor
-        .connect(otherStrat)
-        .create(secondTrade.tokenIn, secondTrade.tokenOut, secondTrade.amountIn, secondTrade.maxSlippage, secondTrade.deadline);
+      await executor.connect(otherStrat).create(secondTrade.tokenIn, secondTrade.tokenOut, secondTrade.amountIn, secondTrade.deadline);
     });
     when('trades have different token in than token out', () => {
       given(async () => {
-        await executor
-          .connect(otherStrat)
-          .create(wallet.generateRandomAddress(), firstTrade.tokenOut, firstTrade.amountIn, firstTrade.maxSlippage, firstTrade.deadline);
+        await executor.connect(otherStrat).create(wallet.generateRandomAddress(), firstTrade.tokenOut, firstTrade.amountIn, firstTrade.deadline);
       });
       then('tx is reverted with reason', async () => {
         await expect(executor.connect(tradeSettler)['execute(uint256,uint256,uint256,uint256)'](3, 2, 0, 0)).to.be.revertedWith(
@@ -335,9 +339,7 @@ contract('TradeFactoryExecutor', () => {
     });
     when('trades have different token out than token in', () => {
       given(async () => {
-        await executor
-          .connect(otherStrat)
-          .create(firstTrade.tokenIn, wallet.generateRandomAddress(), firstTrade.amountIn, firstTrade.maxSlippage, firstTrade.deadline);
+        await executor.connect(otherStrat).create(firstTrade.tokenIn, wallet.generateRandomAddress(), firstTrade.amountIn, firstTrade.deadline);
       });
       then('tx is reverted with reason', async () => {
         await expect(executor.connect(tradeSettler)['execute(uint256,uint256,uint256,uint256)'](3, 2, 0, 0)).to.be.revertedWith(
@@ -349,7 +351,7 @@ contract('TradeFactoryExecutor', () => {
       given(async () => {
         await executor
           .connect(otherStrat)
-          .create(firstTrade.tokenIn, firstTrade.tokenOut, firstTrade.amountIn, firstTrade.maxSlippage, moment().add('1', 'minutes').unix());
+          .create(firstTrade.tokenIn, firstTrade.tokenOut, firstTrade.amountIn, moment().add('1', 'minutes').unix());
         await evm.advanceToTimeAndBlock(moment().add('2', 'minutes').unix());
       });
       then('tx is reverted with reason', async () => {
@@ -362,7 +364,7 @@ contract('TradeFactoryExecutor', () => {
       given(async () => {
         await executor
           .connect(otherStrat)
-          .create(secondTrade.tokenIn, secondTrade.tokenOut, secondTrade.amountIn, secondTrade.maxSlippage, moment().add('1', 'minutes').unix());
+          .create(secondTrade.tokenIn, secondTrade.tokenOut, secondTrade.amountIn, moment().add('1', 'minutes').unix());
         await evm.advanceToTimeAndBlock(moment().add('2', 'minutes').unix());
       });
       then('tx is reverted with reason', async () => {
@@ -397,7 +399,6 @@ contract('TradeFactoryExecutor', () => {
     const amountIn = utils.parseEther('100');
     const deadline = moment().add('30', 'minutes').unix();
     const tokenOut = wallet.generateRandomAddress();
-    const maxSlippage = BigNumber.from('1000');
     const governor = wallet.generateRandomAddress();
     given(async () => {
       otcPool.governor.returns(governor);
@@ -406,7 +407,6 @@ contract('TradeFactoryExecutor', () => {
         tokenIn: token.address,
         tokenOut,
         amountIn,
-        maxSlippage,
         deadline,
       });
     });
@@ -428,7 +428,6 @@ contract('TradeFactoryExecutor', () => {
           tokenIn: tokenIn.address,
           tokenOut,
           amountIn,
-          maxSlippage,
           deadline,
         });
       });
@@ -442,7 +441,6 @@ contract('TradeFactoryExecutor', () => {
           tokenIn: token.address,
           tokenOut: (await smock.fake<IERC20>(IERC20ABI)).address,
           amountIn,
-          maxSlippage,
           deadline,
         });
       });
@@ -491,7 +489,6 @@ contract('TradeFactoryExecutor', () => {
           tokenIn: token.address,
           tokenOut,
           amountIn,
-          maxSlippage,
           deadline,
         });
         executeTx = await executor['execute(uint256[],uint256)']([1, 2], rate);
@@ -500,7 +497,6 @@ contract('TradeFactoryExecutor', () => {
         expect(await token.balanceOf(governor)).to.be.equal(amountIn.mul(2));
       });
       then('otc pool take is called correctly', async () => {
-        console.log(otcPool.take.getCall(0).args);
         expect(otcPool.take.atCall(0)).to.have.been.calledWith(tokenOut, amountIn.div(2).toString(), strategy.address);
         // expect(otcPool.take.atCall(1)).to.have.been.calledWith(tokenOut, amountIn.div(2).toString(), strategy.address);
       });
@@ -522,17 +518,15 @@ contract('TradeFactoryExecutor', () => {
     tokenIn,
     tokenOut,
     amountIn,
-    maxSlippage,
     deadline,
   }: {
     tokenIn: string;
     tokenOut: string;
     amountIn: BigNumber;
-    maxSlippage: BigNumber | number;
     deadline: number;
   }): Promise<{ tx: TransactionResponse; id: BigNumber }> {
     await token.connect(strategy).increaseAllowance(executor.address, amountIn);
-    const tx = await executor.connect(strategy).create(tokenIn, tokenOut, amountIn, maxSlippage, deadline);
+    const tx = await executor.connect(strategy).create(tokenIn, tokenOut, amountIn, deadline);
     const txReceipt = await tx.wait();
     const parsedEvent = executor.interface.parseLog(txReceipt.logs[0]);
     return { tx, id: parsedEvent.args._id };

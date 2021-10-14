@@ -2,8 +2,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 import { TransactionResponse } from '@ethersproject/abstract-provider';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { behaviours, contracts, erc20, evm, wallet } from '../utils';
-import { contract, given, then, when } from '../utils/bdd';
+import { behaviours, contracts, erc20, evm, wallet } from '@test-utils';
+import { contract, given, then, when } from '@test-utils/bdd';
 import { BigNumber } from '@ethersproject/bignumber';
 import { constants, utils } from 'ethers';
 import { IERC20, SwapperMock, SwapperMock__factory } from '@typechained';
@@ -17,7 +17,7 @@ contract('Swapper', () => {
 
   before(async () => {
     [governor, tradeFactory] = await ethers.getSigners();
-    swapperFactory = await ethers.getContractFactory<SwapperMock__factory>('contracts/mock/Swapper.sol:SwapperMock');
+    swapperFactory = await ethers.getContractFactory<SwapperMock__factory>('contracts/mock/swappers/Swapper.sol:SwapperMock');
     swapper = await swapperFactory.deploy(governor.address, tradeFactory.address);
     snapshotId = await evm.snapshot.take();
   });
@@ -71,57 +71,57 @@ contract('Swapper', () => {
     });
   });
 
-  describe('assertPreSwap', () => {
-    behaviours.shouldBeCheckPreAssetSwap({
-      contract: () => swapper,
-      func: 'assertPreSwap',
-      withData: false,
-    });
-  });
+  // describe('assertPreSwap', () => {
+  //   behaviours.shouldBeCheckPreAssetSwap({
+  //     contract: () => swapper,
+  //     func: 'assertPreSwap',
+  //     withData: false,
+  //   });
+  // });
 
-  describe('swap', () => {
-    behaviours.shouldBeExecutableOnlyByTradeFactory({
-      contract: () => swapper,
-      funcAndSignature: 'swap(address,address,address,uint256,uint256,bytes)',
-      params: [constants.AddressZero, constants.AddressZero, constants.AddressZero, constants.Zero, constants.Zero, '0x'],
-      tradeFactory: () => tradeFactory,
-    });
-    behaviours.shouldBeCheckPreAssetSwap({
-      contract: () => swapper.connect(tradeFactory),
-      func: 'swap',
-      withData: true,
-    });
-    when('everything is valid', () => {
-      let tokenIn: IERC20;
-      let swapTx: TransactionResponse;
-      let receiver: string;
-      let tokenOut: string;
-      const amount = utils.parseEther('10');
-      const maxSlippage = BigNumber.from('1000');
-      const data = contracts.encodeParameters(['uint256'], [constants.MaxUint256]);
-      given(async () => {
-        receiver = wallet.generateRandomAddress();
-        tokenOut = wallet.generateRandomAddress();
-        tokenIn = await erc20.deploy({
-          initialAccount: tradeFactory.address,
-          initialAmount: amount,
-          name: 'Token In',
-          symbol: 'TI',
-        });
-        await tokenIn.connect(tradeFactory).approve(swapper.address, amount);
-        swapTx = await swapper.connect(tradeFactory).swap(receiver, tokenIn.address, tokenOut, amount, maxSlippage, data);
-      });
-      then('can decode data correctly', async () => {
-        await expect(swapTx).to.emit(swapper, 'DecodedData').withArgs(constants.MaxUint256);
-      });
-      then('executes internal swap', async () => {
-        await expect(swapTx).to.emit(swapper, 'MyInternalExecuteSwap').withArgs(receiver, tokenIn.address, tokenOut, amount, maxSlippage, data);
-      });
-      then('emits event with correct information', async () => {
-        await expect(swapTx).to.emit(swapper, 'Swapped').withArgs(receiver, tokenIn.address, tokenOut, amount, maxSlippage, 1000, data);
-      });
-    });
-  });
+  // describe('swap', () => {
+  //   behaviours.shouldBeExecutableOnlyByTradeFactory({
+  //     contract: () => swapper,
+  //     funcAndSignature: 'swap(address,address,address,uint256,uint256,bytes)',
+  //     params: [constants.AddressZero, constants.AddressZero, constants.AddressZero, constants.Zero, constants.Zero, '0x'],
+  //     tradeFactory: () => tradeFactory,
+  //   });
+  //   behaviours.shouldBeCheckPreAssetSwap({
+  //     contract: () => swapper.connect(tradeFactory),
+  //     func: 'swap',
+  //     withData: true,
+  //   });
+  //   when('everything is valid', () => {
+  //     let tokenIn: IERC20;
+  //     let swapTx: TransactionResponse;
+  //     let receiver: string;
+  //     let tokenOut: string;
+  //     const amount = utils.parseEther('10');
+  //     const maxSlippage = BigNumber.from('1000');
+  //     const data = contracts.encodeParameters(['uint256'], [constants.MaxUint256]);
+  //     given(async () => {
+  //       receiver = wallet.generateRandomAddress();
+  //       tokenOut = wallet.generateRandomAddress();
+  //       tokenIn = await erc20.deploy({
+  //         initialAccount: tradeFactory.address,
+  //         initialAmount: amount,
+  //         name: 'Token In',
+  //         symbol: 'TI',
+  //       });
+  //       await tokenIn.connect(tradeFactory).approve(swapper.address, amount);
+  //       swapTx = await swapper.connect(tradeFactory).swap(receiver, tokenIn.address, tokenOut, amount, maxSlippage, data);
+  //     });
+  //     then('can decode data correctly', async () => {
+  //       await expect(swapTx).to.emit(swapper, 'DecodedData').withArgs(constants.MaxUint256);
+  //     });
+  //     then('executes internal swap', async () => {
+  //       await expect(swapTx).to.emit(swapper, 'MyInternalExecuteSwap').withArgs(receiver, tokenIn.address, tokenOut, amount, maxSlippage, data);
+  //     });
+  //     then('emits event with correct information', async () => {
+  //       await expect(swapTx).to.emit(swapper, 'Swapped').withArgs(receiver, tokenIn.address, tokenOut, amount, maxSlippage, 1000, data);
+  //     });
+  //   });
+  // });
 
   describe('sendDust', () => {
     // only governor
