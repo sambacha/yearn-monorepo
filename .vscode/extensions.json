@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "strigo.linear",
+        "coenraads.bracket-pair-colorizer-2",
+        "sourcegraph.sourcegraph",
+        "contractshark.solidity-lang"
+    ]
+}
