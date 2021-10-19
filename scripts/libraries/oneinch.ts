@@ -62,7 +62,7 @@ export type SwapResponse = {
 export const swap = async (chainId: number, swapParams: SwapParams): Promise<SwapResponse> => {
   let data: SwapResponse;
   try {
-    const axiosProtocolResponse = await axios.get(`https://api.1inch.exchange/v3.0/${chainId}/protocols`);
+    const axiosProtocolResponse = (await axios.get(`https://api.1inch.exchange/v3.0/${chainId}/protocols`)) as any;
     const protocols = (axiosProtocolResponse.data.protocols as string[]).filter((protocol) => {
       return protocol.includes('ONE_INCH_LIMIT_ORDER') == false;
     });
