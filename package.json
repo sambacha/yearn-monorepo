@@ -1,0 +1,21 @@
+{
+  "name": "yearn-pkgs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "lerna": "^4.0.0"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sambacha/yearn-monorepo.git"
+  },
+  "keywords": [],
+  "author": "Yearn Contributors",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/sambacha/yearn-monorepo/issues"
+  },
+  "homepage": "https://github.com/sambacha/yearn-monorepo#readme"
+}

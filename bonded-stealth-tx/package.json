@@ -1,0 +1,100 @@
+{
+  "name": "@lbertenasco/bonded-stealth-tx",
+  "version": "0.3.2",
+  "description": "bonded stealth tx vault smart contracts",
+  "homepage": "https://github.com/lbertenasco/bonded-stealth-tx#readme",
+  "bugs": {
+    "url": "https://github.com/lbertenasco/bonded-stealth-tx/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lbertenasco/bonded-stealth-tx.git"
+  },
+  "license": "MIT",
+  "files": [
+    "/contracts/**/*.sol",
+    "/interfaces/**/*.sol",
+    "!/contracts/mock"
+  ],
+  "scripts": {
+    "compile": "hardhat compile",
+    "coverage": "hardhat coverage",
+    "docs": "solidity-docgen --solc-module solc-0.8",
+    "fork:node": "FORK=true hardhat node",
+    "fork:script": "FORK=true hardhat run",
+    "lint:check": "solhint 'contracts/**/*.sol' 'interfaces/**/*.sol' && prettier --check './**'",
+    "lint:fix": "sort-package-json && prettier --write './**' && solhint --fix 'contracts/**/*.sol' 'interfaces/**/*.sol'",
+    "prepublishOnly": "pinst --disable",
+    "postpublish": "pinst --enable",
+    "release": "standard-version",
+    "test": "TEST=true hardhat compile && TEST=true mocha",
+    "test:parallel": "TEST=true hardhat compile && TEST=true mocha --parallel",
+    "test:all": "yarn test './test/e2e/**/*.spec.ts' 'test/unit/**/*.spec.ts'",
+    "test:all:parallel": "yarn test:parallel './test/e2e/**/*.spec.ts' 'test/unit/**/*.spec.ts'",
+    "test:e2e": "yarn test ./test/e2e/**/*.spec.ts",
+    "test:e2e:parallel": "yarn test:parallel ./test/e2e/**/*.spec.ts",
+    "test:gas": "REPORT_GAS=1 npx hardhat test",
+    "test:unit": "yarn test 'test/unit/**/*.spec.ts'",
+    "test:unit:parallel": "yarn test:parallel 'test/unit/**/*.spec.ts'",
+    "watcher:start:mainnet": "npx hardhat run ./scripts/watcher/yearn.ts --network mainnet"
+  },
+  "dependencies": {
+    "@lbertenasco/contract-utils": "0.3.5",
+    "@openzeppelin/contracts": "4.2.0",
+    "ws": "7.5.3"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "12.1.4",
+    "@commitlint/config-conventional": "12.1.4",
+    "@flashbots/ethers-provider-bundle": "0.3.2",
+    "@nomiclabs/hardhat-ethers": "2.0.2",
+    "@nomiclabs/hardhat-etherscan": "2.1.4",
+    "@nomiclabs/hardhat-waffle": "2.0.1",
+    "@types/chai": "4.2.21",
+    "@types/chai-as-promised": "7.1.4",
+    "@types/lodash": "4.14.171",
+    "@types/mocha": "8.2.3",
+    "@types/node": "16.3.0",
+    "@types/ws": "7.4.6",
+    "@uniswap/v2-core": "1.0.1",
+    "@uniswap/v2-periphery": "1.1.0-beta.0",
+    "aws-sdk": "2.942.0",
+    "axios": "0.21.1",
+    "chai": "4.3.4",
+    "chai-as-promised": "7.1.1",
+    "dotenv": "10.0.0",
+    "ethereum-waffle": "3.4.0",
+    "ethers": "5.4.1",
+    "hardhat": "2.4.3",
+    "hardhat-gas-reporter": "1.0.4",
+    "hardhat-preprocessor": "0.1.4",
+    "inquirer": "8.1.1",
+    "lodash": "4.17.21",
+    "mocha": "9.0.2",
+    "moment": "2.29.1",
+    "pinst": "2.1.6",
+    "prettier": "2.3.2",
+    "prettier-plugin-solidity": "1.0.0-beta.14",
+    "solc-0.8": "npm:solc@^0.8.6",
+    "solhint": "3.3.6",
+    "solhint-plugin-prettier": "0.0.5",
+    "solidity-coverage": "0.7.16",
+    "solidity-docgen": "0.5.13",
+    "sort-package-json": "1.50.0",
+    "standard-version": "9.3.0",
+    "ts-node": "10.0.0",
+    "typescript": "4.3.5"
+  },
+  "authors": [
+    {
+      "name": "b0dhidharma",
+      "email": "b0dhidharma@protonmail.com",
+      "url": "https://github.com/b0dhidharma"
+    },
+    {
+      "name": "Luciano Bertenasco",
+      "email": "lbertenasco@gmail.com",
+      "url": "https://github.com/lbertenasco"
+    }
+  ]
+}

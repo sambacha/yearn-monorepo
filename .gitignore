@@ -1,0 +1,10 @@
+third_party/jazelle/temp
+bazel-*
+.DS_Store
+node_modules
+*.log
+*.tgz
+*.tar.gz
+*.zip
+coverage/
+cache/
