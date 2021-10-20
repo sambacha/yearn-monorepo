@@ -1,7 +1,6 @@
 {
   "packages": [
-    "bonded-stealth-tx",
-    "contract-utils"
+    "packages/*"
   ],
   "version": "0.0.0"
 }
